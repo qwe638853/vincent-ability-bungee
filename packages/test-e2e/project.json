@@ -28,7 +28,12 @@
       "command": "echo 'Test target disabled for this project - only \"test-e2e\" is supported'"
     },
     "ensure-ability-policy-built-and-deployed-to-ipfs": {
-      "dependsOn": ["ability-native-send:action:deploy", "policy-counter:action:deploy", "^build"]
+      "dependsOn": [
+        "ability-native-send:action:deploy",
+        "ability-bungee:action:deploy",
+        "policy-counter:action:deploy",
+        "^build"
+      ]
     },
     "test-e2e": {
       "dependsOn": ["ensure-ability-policy-built-and-deployed-to-ipfs"],

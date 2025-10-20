@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 
 import type { PermissionData } from '@lit-protocol/vincent-contracts-sdk';
 
+import { bundledVincentAbility as bungeeAbility } from '@lit-protocol/ability-bungee';
 import {
   disconnectVincentAbilityClients,
   getVincentAbilityClient,
@@ -44,8 +45,9 @@ async function getTargetAppVersionInfo({
 // Define permission data for all abilities and policies
 const PERMISSION_DATA: PermissionData = {
   [nativeSendAbility.ipfsCid]: {
-    [counterPolicy.ipfsCid]: { maxSends: 1, timeWindowSeconds: 20 }, // Only allow 1 transfer every 20 seconds
+    [counterPolicy.ipfsCid]: { maxSends: 1, timeWindowSeconds: 20 },
   },
+  [bungeeAbility.ipfsCid]: {},
 };
 
 // An array of the IPFS cid of each ability to be tested, computed from the keys of PERMISSION_DATA

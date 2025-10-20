@@ -1,0 +1,59 @@
+{
+  "name": "ability-bungee",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/ability-bungee/src",
+  "projectType": "library",
+  "targets": {
+    "clean": {},
+    "action:build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["policy-counter:build"],
+      "options": {
+        "commands": ["pnpm node ./scripts/bundle-vincent-ability/esbuild.js"],
+        "cwd": "packages/ability-bungee",
+        "parallel": false
+      }
+    },
+    "action:only:deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["node scripts/deploy-lit-action.js"],
+        "cwd": "{projectRoot}"
+      }
+    },
+    "action:deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["action:build"],
+      "options": {
+        "commands": ["node scripts/deploy-lit-action.js"],
+        "cwd": "packages/ability-bungee"
+      }
+    },
+    "build": {
+      "executor": "@nx/js:tsc",
+      "dependsOn": ["action:build"],
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "packages/ability-bungee/dist",
+        "main": "packages/ability-bungee/src/index.ts",
+        "tsConfig": "packages/ability-bungee/tsconfig.lib.json",
+        "assets": [
+          "packages/ability-bungee/*.md",
+          {
+            "glob": "**/*",
+            "input": "packages/ability-bungee/src/generated",
+            "output": "src/generated"
+          }
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "{projectRoot}/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  }
+}
