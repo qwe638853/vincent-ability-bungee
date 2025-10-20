@@ -6,7 +6,6 @@ import {
 } from '@lit-protocol/vincent-ability-sdk';
 import { laUtils } from '@lit-protocol/vincent-scaffold-sdk';
 
-import type { EthersType /*LitNamespace*/ } from '../Lit';
 import type { AbilityParams } from './schemas';
 
 import {
