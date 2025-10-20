@@ -13,9 +13,7 @@ import {
   validateChainId,
   validateAddress,
   NATIVE_TOKEN_ADDRESS,
-  getTokenDecimals,
   getTokenBalance,
-  parseAmount,
   callBungeeAPI,
   checkAndApproveToken,
   getRpcUrl,
@@ -113,11 +111,10 @@ export const vincentAbility = createVincentAbility({
         });
       }
 
-      // 3) 金額轉最小單位 + 餘額檢查
-      const decimals = await getTokenDecimals(provider, sourceTokenRaw);
+      // 3) 金額（已為最小單位）+ 餘額檢查
       let amountWei;
       try {
-        amountWei = ethers.BigNumber.from(parseAmount(String(amount), decimals));
+        amountWei = ethers.BigNumber.from(String(amount));
       } catch {
         return fail({
           reason: KNOWN_ERRORS.INVALID_AMOUNT,
@@ -226,9 +223,8 @@ export const vincentAbility = createVincentAbility({
         return fail({ error: 'Source and destination chains must be different for bridging' });
       }
 
-      // Prepare amount in wei
-      const decimals = await getTokenDecimals(provider, sourceTokenRaw);
-      const amountWei = ethers.BigNumber.from(parseAmount(String(amount), decimals));
+      // Prepare amount（已為最小單位）
+      const amountWei = ethers.BigNumber.from(String(amount));
 
       // Quote routes
       const quoteParams: Record<string, any> = {

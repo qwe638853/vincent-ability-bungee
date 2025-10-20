@@ -102,17 +102,7 @@ export async function getTokenBalance(
   }
 }
 
-export async function getTokenDecimals(
-  provider: ethers.providers.Provider,
-  tokenAddress: string,
-): Promise<number> {
-  if (isNativeToken(tokenAddress)) {
-    return 18;
-  } else {
-    const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-    return await tokenContract.decimals();
-  }
-}
+// Removed: getTokenDecimals (no longer needed; amounts are provided in smallest units)
 
 export async function checkAndApproveToken(
   provider: ethers.providers.Provider,
@@ -192,24 +182,6 @@ export async function callBungeeAPI(
     throw new Error(`Bungee API error: ${response.status} - ${errorText}`);
   }
   return await response.json();
-}
-
-export function formatAmount(amount: string, decimals: number): string {
-  try {
-    const formatted = ethers.utils.formatUnits(amount, decimals);
-    return formatted;
-  } catch {
-    return amount;
-  }
-}
-
-export function parseAmount(amount: string, decimals: number): string {
-  try {
-    const parsed = ethers.utils.parseUnits(amount, decimals);
-    return parsed.toString();
-  } catch {
-    throw new Error(`Invalid amount format: ${amount}`);
-  }
 }
 
 export async function getRpcUrl(chainId: string): Promise<string> {
