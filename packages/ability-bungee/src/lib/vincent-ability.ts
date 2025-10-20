@@ -1,3 +1,5 @@
+import { ethers } from 'ethers';
+
 import {
   createVincentAbility,
   supportedPoliciesForAbility,
@@ -5,7 +7,7 @@ import {
 import { laUtils } from '@lit-protocol/vincent-scaffold-sdk';
 
 import type { EthersType /*LitNamespace*/ } from '../Lit';
-import type {AbilityParams} from './schemas';
+import type { AbilityParams } from './schemas';
 
 import {
   isNativeToken,
@@ -25,12 +27,10 @@ import {
   precheckFailSchema,
   precheckSuccessSchema,
   abilityParamsSchema,
-  KNOWN_ERRORS
-  
+  KNOWN_ERRORS,
 } from './schemas';
 
 // declare const Lit: typeof LitNamespace;
-declare const ethers: EthersType;
 
 export const vincentAbility = createVincentAbility({
   packageName: '@lit-protocol/ability-bungee' as const,
@@ -104,7 +104,8 @@ export const vincentAbility = createVincentAbility({
       }
 
       // 2) Provider / 網路一致性
-      const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      const rpcForPrecheck = rpcUrl || (await getRpcUrl(sourceChain));
+      const provider = new ethers.providers.JsonRpcProvider(rpcForPrecheck);
       const network = await provider.getNetwork();
       if (String(network.chainId) !== String(sourceChain)) {
         return fail({

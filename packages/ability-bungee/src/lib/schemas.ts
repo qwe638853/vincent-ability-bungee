@@ -43,6 +43,7 @@ export const precheckFailSchema = z.object({
     z.literal(KNOWN_ERRORS.INVALID_TOKEN),
     z.literal(KNOWN_ERRORS.NO_ROUTE_FOUND),
     z.literal(KNOWN_ERRORS.ESTIMATION_TOO_LOW),
+    z.literal(KNOWN_ERRORS.EXECUTION_FAILED),
   ]),
   error: z.string(),
 });
