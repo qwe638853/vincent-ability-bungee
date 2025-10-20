@@ -1,5 +1,5 @@
 {
-  "name": "@lit-protocol/ability-bungee",
+  "name": "@qwe638853/ability-bungee",
   "version": "0.0.1",
   "description": "A Vincent ability for Bungee single-transaction bridging.",
   "main": "./dist/src/index.js",
