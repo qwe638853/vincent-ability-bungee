@@ -13,7 +13,6 @@
     "build": "nx build"
   },
   "dependencies": {
-    "@lit-protocol/vincent-example-policy-counter": "workspace:*",
     "@lit-protocol/vincent-ability-sdk": "^2.0.0",
     "@lit-protocol/vincent-scaffold-sdk": "^2.0.0",
     "ethers": "5.8.0",
