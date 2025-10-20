@@ -316,7 +316,7 @@ export const vincentAbility = createVincentAbility({
         const approvalHash = await laUtils.transaction.primitive.sendTx(provider, approvalSigned);
         console.log(`${logPrefix} Approval sent: ${approvalHash}`);
       }
-
+      console.log(`${logPrefix} Best route:`, best);
       // Build bridge tx
       let txData: any;
       if (autoRoute && autoRoute?.txData) {
