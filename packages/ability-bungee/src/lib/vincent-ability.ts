@@ -130,18 +130,19 @@ export const vincentAbility = createVincentAbility({
         });
       }
       const quoteParams = {
-        fromChainId: sourceChain,
-        fromTokenAddress: sourceTokenForQuote,
-        toChainId: destinationChain,
-        toTokenAddress: destinationToken,
-        fromAmount: amountWei.toString(),
+        originChainId: sourceChain,
+        destinationChainId: destinationChain,
+        inputToken: sourceTokenForQuote,
+        outputToken: destinationToken,
+        inputAmount: amountWei.toString(),
         userAddress: recipient ?? pkpAddress,
+        receiverAddress: recipient ?? pkpAddress,
         uniqueRoutesPerBridge: true,
         sort: 'output',
         singleTxOnly: true,
         isContractCall: false,
         slippage: slippageBps,
-      };
+      } as const;
 
       console.log(`${logPrefix} Getting quote from Bungee...`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
@@ -228,12 +229,13 @@ export const vincentAbility = createVincentAbility({
 
       // Quote routes
       const quoteParams: Record<string, any> = {
-        fromChainId: sourceChain,
-        fromTokenAddress: sourceTokenForQuote,
-        toChainId: destinationChain,
-        toTokenAddress: destinationToken,
-        fromAmount: amountWei.toString(),
+        originChainId: sourceChain,
+        destinationChainId: destinationChain,
+        inputToken: sourceTokenForQuote,
+        outputToken: destinationToken,
+        inputAmount: amountWei.toString(),
         userAddress: recipient ?? pkpAddress,
+        receiverAddress: recipient ?? pkpAddress,
         uniqueRoutesPerBridge: true,
         sort: 'output',
         singleTxOnly: true,

@@ -42,7 +42,7 @@ export const CHAIN_NAMES: Record<string, string> = {
 };
 
 // Bungee API base URL (can be overridden via env if desired)
-export const BUNGEE_API_URL = 'https://public-backend.bungee.exchange';
+export const BUNGEE_API_URL = 'https://public-backend.bungee.exchange/api/v1';
 
 export const ERC20_ABI = [
   {
