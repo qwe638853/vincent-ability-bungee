@@ -28,6 +28,7 @@ import {
 } from './schemas';
 
 // declare const Lit: typeof LitNamespace;
+declare const Lit: any;
 
 export const vincentAbility = createVincentAbility({
   packageName: '@lit-protocol/ability-bungee' as const,
@@ -334,32 +335,51 @@ export const vincentAbility = createVincentAbility({
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
       }
 
-      const bridgeTx: any = {
-        to: txData.to,
-        data: txData.data,
-        value: txData.value
-          ? ethers.BigNumber.from(String(txData.value))
-          : ethers.BigNumber.from('0'),
-        chainId: Number(sourceChain),
+      // Prepare and serialize tx inside runOnce to minimize per-node work
+      const serializedResp = await Lit.Actions.runOnce(
+        { waitForResponse: true, name: 'bungeeSerializedTxn' },
+        async () => {
+          const tx: any = {
+            to: txData.to,
+            data: txData.data,
+            value: txData.value
+              ? ethers.BigNumber.from(String(txData.value))
+              : ethers.BigNumber.from('0'),
+            chainId: Number(sourceChain),
+          };
+          const txRequest = { ...tx, from: pkpAddress };
+          // Prefer provided gas from autoRoute; fallback to RPC
+          if (autoRoute?.gasFee?.gasLimit) {
+            tx.gasLimit = ethers.BigNumber.from(String(autoRoute.gasFee.gasLimit));
+          } else {
+            tx.gasLimit = await provider.estimateGas(txRequest);
+          }
+          if (autoRoute?.gasFee?.gasPrice) {
+            tx.gasPrice = ethers.BigNumber.from(String(autoRoute.gasFee.gasPrice));
+          } else {
+            tx.gasPrice = await provider.getGasPrice();
+          }
+          tx.nonce = await provider.getTransactionCount(pkpAddress);
+          return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
+        },
+      );
+
+      const { serializedTxn } = JSON.parse(String(serializedResp || '{}')) as {
+        serializedTxn: string;
       };
-      const txRequest = { ...bridgeTx, from: pkpAddress };
-      if (autoRoute?.gasFee?.gasLimit) {
-        bridgeTx.gasLimit = ethers.BigNumber.from(String(autoRoute.gasFee.gasLimit));
-      } else {
-        bridgeTx.gasLimit = await provider.estimateGas(txRequest);
+      if (!serializedTxn) {
+        return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Serialization failed' });
       }
-      if (autoRoute?.gasFee?.gasPrice) {
-        bridgeTx.gasPrice = ethers.BigNumber.from(String(autoRoute.gasFee.gasPrice));
-      } else {
-        bridgeTx.gasPrice = await provider.getGasPrice();
-      }
-      bridgeTx.nonce = await provider.getTransactionCount(pkpAddress);
+      const toSign = ethers.utils.parseTransaction(serializedTxn) as any;
+      delete toSign.v;
+      delete toSign.r;
+      delete toSign.s;
 
       // Sign & send via PKP
       const signed = await laUtils.transaction.primitive.signTx({
         sigName: 'bungeeSingleTxBridge',
         pkpPublicKey,
-        tx: bridgeTx,
+        tx: toSign,
       });
       const txHash = await laUtils.transaction.primitive.sendTx(provider, signed);
       console.log(`${logPrefix} Bridge tx sent: ${txHash}`);
