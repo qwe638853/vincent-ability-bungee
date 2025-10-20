@@ -146,14 +146,26 @@ export const vincentAbility = createVincentAbility({
 
       console.log(`${logPrefix} Getting quote from Bungee...`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-      const routes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
-      if (!routes.length) {
+      const autoRoute = quoteData?.result?.autoRoute ?? quoteData?.autoRoute;
+      const legacyRoutes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
+      const manualRoutes = quoteData?.result?.manualRoutes ?? quoteData?.manualRoutes ?? [];
+
+      if (autoRoute) {
+        return succeed({
+          fromChainId: sourceChain,
+          toChainId: destinationChain,
+          estimatedToAmount: String(autoRoute?.output?.amount ?? '0'),
+          bestRoute: autoRoute,
+        });
+      }
+
+      const candidates = legacyRoutes.length ? legacyRoutes : manualRoutes;
+      if (!candidates.length) {
         return fail({
           reason: KNOWN_ERRORS.NO_ROUTE_FOUND,
           error: 'No available routes from Bungee',
         });
       }
-      const candidates = routes;
       const best = [...candidates].sort((a: any, b: any) => {
         const av = BigInt(a?.toAmount ?? '0');
         const bv = BigInt(b?.toAmount ?? '0');
@@ -163,7 +175,7 @@ export const vincentAbility = createVincentAbility({
       return succeed({
         fromChainId: sourceChain,
         toChainId: destinationChain,
-        estimatedToAmount: String(best?.toAmount ?? '0'),
+        estimatedToAmount: String(best?.toAmount ?? best?.output?.amount ?? '0'),
         bestRoute: best,
       });
     } catch (error) {
@@ -244,19 +256,27 @@ export const vincentAbility = createVincentAbility({
       };
       console.log(`${logPrefix} Fetching quote`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-      const routes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
-      if (!routes.length) {
+      const autoRoute = quoteData?.result?.autoRoute ?? quoteData?.autoRoute;
+      const legacyRoutes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
+      const manualRoutes = quoteData?.result?.manualRoutes ?? quoteData?.manualRoutes ?? [];
+      const candidates = autoRoute
+        ? [autoRoute]
+        : legacyRoutes.length
+          ? legacyRoutes
+          : manualRoutes;
+      if (!candidates.length) {
         return fail({
           reason: KNOWN_ERRORS.NO_ROUTE_FOUND,
           error: 'No available routes from Bungee',
         });
       }
-      const candidates = routes;
-      const best = [...candidates].sort((a: any, b: any) => {
-        const av = BigInt(a?.toAmount ?? '0');
-        const bv = BigInt(b?.toAmount ?? '0');
-        return av === bv ? 0 : av > bv ? -1 : 1;
-      })[0];
+      const best = autoRoute
+        ? autoRoute
+        : [...candidates].sort((a: any, b: any) => {
+            const av = BigInt(a?.toAmount ?? a?.output?.amount ?? '0');
+            const bv = BigInt(b?.toAmount ?? b?.output?.amount ?? '0');
+            return av === bv ? 0 : av > bv ? -1 : 1;
+          })[0];
 
       // Optional ERC20 approval (on-chain check). If insufficient, try building approval tx via API.
       const needsApproval = !isNativeToken(sourceTokenRaw)
@@ -298,13 +318,18 @@ export const vincentAbility = createVincentAbility({
       }
 
       // Build bridge tx
-      console.log(`${logPrefix} Building route tx via Bungee`);
-      const buildPayload: Record<string, any> = {
-        route: best,
-        userAddress: pkpAddress,
-      };
-      const built: any = await callBungeeAPI('/bungee/server/build-tx', 'POST', buildPayload);
-      const txData = built?.result?.tx || built?.tx || built; // handle variants
+      let txData: any;
+      if (autoRoute && autoRoute?.txData) {
+        txData = autoRoute.txData;
+      } else {
+        console.log(`${logPrefix} Building route tx via Bungee`);
+        const buildPayload: Record<string, any> = {
+          route: best,
+          userAddress: pkpAddress,
+        };
+        const built: any = await callBungeeAPI('/bungee/server/build-tx', 'POST', buildPayload);
+        txData = built?.result?.tx || built?.tx || built; // handle variants
+      }
       if (!txData?.to || !txData?.data) {
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
       }
