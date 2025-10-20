@@ -343,8 +343,16 @@ export const vincentAbility = createVincentAbility({
         chainId: Number(sourceChain),
       };
       const txRequest = { ...bridgeTx, from: pkpAddress };
-      bridgeTx.gasLimit = await provider.estimateGas(txRequest);
-      bridgeTx.gasPrice = await provider.getGasPrice();
+      if (autoRoute?.gasFee?.gasLimit) {
+        bridgeTx.gasLimit = ethers.BigNumber.from(String(autoRoute.gasFee.gasLimit));
+      } else {
+        bridgeTx.gasLimit = await provider.estimateGas(txRequest);
+      }
+      if (autoRoute?.gasFee?.gasPrice) {
+        bridgeTx.gasPrice = ethers.BigNumber.from(String(autoRoute.gasFee.gasPrice));
+      } else {
+        bridgeTx.gasPrice = await provider.getGasPrice();
+      }
       bridgeTx.nonce = await provider.getTransactionCount(pkpAddress);
 
       // Sign & send via PKP
