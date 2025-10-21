@@ -325,16 +325,15 @@ export const vincentAbility = createVincentAbility({
         txData = autoRoute.txData;
       } else {
         console.log(`${logPrefix} Building route tx via Bungee`);
-        // Per latest docs, use GET /api/v1/bungee/build-tx
-        const buildParams: Record<string, any> = {
-          userAddress: pkpAddress,
-          receiverAddress: recipient ?? pkpAddress,
-        };
-        if (autoRoute?.quoteId) {
-          buildParams.quoteId = autoRoute.quoteId;
-        } else {
-          buildParams.route = JSON.stringify(best);
+        // Always prefer quoteId per API; do not send route JSON to avoid RouteId errors
+        const quoteId = (autoRoute && autoRoute.quoteId) || (best && best.quoteId);
+        if (!quoteId) {
+          return fail({
+            reason: KNOWN_ERRORS.EXECUTION_FAILED,
+            error: 'Missing quoteId for build-tx. Please re-fetch quote and retry quickly.',
+          });
         }
+        const buildParams: Record<string, any> = { quoteId };
         const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', buildParams);
         txData = built?.result?.tx || built?.tx || built; // handle variants
       }
