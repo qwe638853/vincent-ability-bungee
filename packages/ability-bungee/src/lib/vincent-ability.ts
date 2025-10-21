@@ -143,6 +143,7 @@ export const vincentAbility = createVincentAbility({
         sort: 'output',
         singleTxOnly: true,
         isContractCall: false,
+        useInbox: true,
         slippage: String(Number(slippageBps) / 100),
       } as const;
 
@@ -254,6 +255,7 @@ export const vincentAbility = createVincentAbility({
         sort: 'output',
         singleTxOnly: true,
         isContractCall: false,
+        useInbox: true,
         slippage: String(Number(slippageBps) / 100),
       };
       console.log(`${logPrefix} Fetching quote`, quoteParams);
