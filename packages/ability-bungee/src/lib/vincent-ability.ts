@@ -263,8 +263,8 @@ export const vincentAbility = createVincentAbility({
       const best = quoteData.result.autoRoute;
       const quoteId = quoteData.result.autoRoute.quoteId;
       const requestType = quoteData.result.autoRoute.requestType;
-      console.log('- Quote ID:', quoteId);
-      console.log('- Request Type:', requestType);
+      console.log('-Quote ID:', quoteId);
+      console.log('-Request Type:', requestType);
 
       // Optional ERC20 approval (on-chain check). If insufficient, try building approval tx via API.
       const needsApproval = !isNativeToken(sourceTokenRaw)
