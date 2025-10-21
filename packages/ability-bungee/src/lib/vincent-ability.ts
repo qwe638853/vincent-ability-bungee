@@ -302,11 +302,19 @@ export const vincentAbility = createVincentAbility({
               tx.gasLimit = ethers.BigNumber.from('120000');
             }
             try {
-              tx.gasPrice = best?.gasFee?.gasPrice
-                ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
-                : await provider.getGasPrice();
+              const feeData = await provider.getFeeData();
+              const latest = await provider.getBlock('latest');
+              const base =
+                latest && latest.baseFeePerGas
+                  ? latest.baseFeePerGas
+                  : feeData.lastBaseFeePerGas || feeData.gasPrice || ethers.BigNumber.from('0');
+              const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000'); // 1.5 gwei
+              const bumpedBase = base.mul(12).div(10); // +20%
+              tx.maxPriorityFeePerGas = priority;
+              tx.maxFeePerGas = bumpedBase.add(priority);
             } catch {
-              tx.gasPrice = ethers.BigNumber.from('10000000');
+              // Legacy fallback
+              tx.gasPrice = ethers.BigNumber.from('20000000');
             }
             tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
             return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
@@ -369,9 +377,22 @@ export const vincentAbility = createVincentAbility({
           } else {
             tx.gasLimit = await provider.estimateGas(txRequest);
           }
-          if (best?.gasFee?.gasPrice) {
-            tx.gasPrice = ethers.BigNumber.from(String(best.gasFee.gasPrice));
-          } else {
+          try {
+            const feeData = await provider.getFeeData();
+            const latest = await provider.getBlock('latest');
+            const base =
+              latest && latest.baseFeePerGas
+                ? latest.baseFeePerGas
+                : feeData.lastBaseFeePerGas || feeData.gasPrice || ethers.BigNumber.from('0');
+            const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000'); // 1.5 gwei
+            const hinted = best?.gasFee?.gasPrice
+              ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
+              : base;
+            const baseRef = hinted.gt(base) ? hinted : base;
+            const bumpedBase = baseRef.mul(12).div(10); // +20%
+            tx.maxPriorityFeePerGas = priority;
+            tx.maxFeePerGas = bumpedBase.add(priority);
+          } catch {
             tx.gasPrice = await provider.getGasPrice();
           }
           tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
