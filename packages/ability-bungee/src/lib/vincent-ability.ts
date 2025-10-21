@@ -260,27 +260,11 @@ export const vincentAbility = createVincentAbility({
       };
       console.log(`${logPrefix} Fetching quote`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-      const autoRoute = quoteData?.result?.autoRoute ?? quoteData?.autoRoute;
-      const legacyRoutes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
-      const manualRoutes = quoteData?.result?.manualRoutes ?? quoteData?.manualRoutes ?? [];
-      const candidates = autoRoute
-        ? [autoRoute]
-        : legacyRoutes.length
-          ? legacyRoutes
-          : manualRoutes;
-      if (!candidates.length) {
-        return fail({
-          reason: KNOWN_ERRORS.NO_ROUTE_FOUND,
-          error: 'No available routes from Bungee',
-        });
-      }
-      const best = autoRoute
-        ? autoRoute
-        : [...candidates].sort((a: any, b: any) => {
-            const av = BigInt(a?.toAmount ?? a?.output?.amount ?? '0');
-            const bv = BigInt(b?.toAmount ?? b?.output?.amount ?? '0');
-            return av === bv ? 0 : av > bv ? -1 : 1;
-          })[0];
+      const best = quoteData.result.autoRoute;
+      const quoteId = quoteData.result.autoRoute.quoteId;
+      const requestType = quoteData.result.autoRoute.requestType;
+      console.log('- Quote ID:', quoteId);
+      console.log('- Request Type:', requestType);
 
       // Optional ERC20 approval (on-chain check). If insufficient, try building approval tx via API.
       const needsApproval = !isNativeToken(sourceTokenRaw)
@@ -322,7 +306,7 @@ export const vincentAbility = createVincentAbility({
       }
       console.log(`${logPrefix} Best route:`, best);
       // Build bridge tx - use autoRoute.txData directly per Auto Inbox flow
-      const txData: any = autoRoute?.txData;
+      const txData: any = best.txData;
       if (!txData) {
         return fail({
           reason: KNOWN_ERRORS.EXECUTION_FAILED,
@@ -348,13 +332,13 @@ export const vincentAbility = createVincentAbility({
           };
           const txRequest = { ...tx, from: pkpAddress };
           // Prefer provided gas from autoRoute; fallback to RPC
-          if (autoRoute?.gasFee?.gasLimit) {
-            tx.gasLimit = ethers.BigNumber.from(String(autoRoute.gasFee.gasLimit));
+          if (best?.gasFee?.gasLimit) {
+            tx.gasLimit = ethers.BigNumber.from(String(best.gasFee.gasLimit));
           } else {
             tx.gasLimit = await provider.estimateGas(txRequest);
           }
-          if (autoRoute?.gasFee?.gasPrice) {
-            tx.gasPrice = ethers.BigNumber.from(String(autoRoute.gasFee.gasPrice));
+          if (best?.gasFee?.gasPrice) {
+            tx.gasPrice = ethers.BigNumber.from(String(best.gasFee.gasPrice));
           } else {
             tx.gasPrice = await provider.getGasPrice();
           }
