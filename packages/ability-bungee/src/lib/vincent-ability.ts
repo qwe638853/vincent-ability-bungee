@@ -312,7 +312,8 @@ export const vincentAbility = createVincentAbility({
         });
       }
       const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', { quoteId });
-      const txData: any = built?.result?.tx || built?.tx || built; // handle variants
+      const txData: any =
+        built?.result?.txData || built?.result?.tx || built?.txData || built?.tx || built; // handle variants across API versions
       if (!txData?.to || !txData?.data) {
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
       }
