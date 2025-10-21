@@ -326,10 +326,16 @@ export const vincentAbility = createVincentAbility({
       } else {
         console.log(`${logPrefix} Building route tx via Bungee`);
         // Per latest docs, use GET /api/v1/bungee/build-tx
-        const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', {
-          route: JSON.stringify(best),
+        const buildParams: Record<string, any> = {
           userAddress: pkpAddress,
-        });
+          receiverAddress: recipient ?? pkpAddress,
+        };
+        if (autoRoute?.quoteId) {
+          buildParams.quoteId = autoRoute.quoteId;
+        } else {
+          buildParams.route = JSON.stringify(best);
+        }
+        const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', buildParams);
         txData = built?.result?.tx || built?.tx || built; // handle variants
       }
       if (!txData?.to || !txData?.data) {
