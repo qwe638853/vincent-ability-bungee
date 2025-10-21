@@ -280,26 +280,58 @@ export const vincentAbility = createVincentAbility({
         : false;
       if (needsApproval && best?.approvalData) {
         console.log(`${logPrefix} Building approval tx from approvalData`);
-        const spenderAddress =
-          best.approvalData.spenderAddress || best?.approvalData?.allowanceTarget;
+        const spenderAddress = best.approvalData.spenderAddress;
         const approvalAmount = best.approvalData.amount || amountWei.toString();
         const tokenAddress = best.approvalData.tokenAddress || sourceTokenRaw;
         const iface = new ethers.utils.Interface(ERC20_ABI as any);
         const data = iface.encodeFunctionData('approve', [spenderAddress, approvalAmount]);
-        const approvalTx = {
-          to: tokenAddress,
-          data,
-          value: ethers.BigNumber.from('0'),
-          chainId: Number(sourceChain),
-        } as any;
-        const approvalRequest = { ...approvalTx, from: pkpAddress };
-        approvalTx.gasLimit = await provider.estimateGas(approvalRequest);
-        approvalTx.gasPrice = await provider.getGasPrice();
-        approvalTx.nonce = await provider.getTransactionCount(pkpAddress);
+
+        const serializedApprovalResp = await Lit.Actions.runOnce(
+          { waitForResponse: true, name: 'bungeeSerializedApproval' },
+          async () => {
+            const tx: any = {
+              to: tokenAddress,
+              data,
+              value: ethers.BigNumber.from('0'),
+              chainId: Number(sourceChain),
+            };
+            const txRequest = { ...tx, from: pkpAddress };
+            try {
+              tx.gasLimit = await provider.estimateGas(txRequest);
+            } catch {
+              tx.gasLimit = ethers.BigNumber.from('120000');
+            }
+            try {
+              tx.gasPrice = best?.gasFee?.gasPrice
+                ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
+                : await provider.getGasPrice();
+            } catch {
+              tx.gasPrice = ethers.BigNumber.from('10000000');
+            }
+            tx.nonce = await provider.getTransactionCount(pkpAddress);
+            return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
+          },
+        );
+
+        const { serializedTxn: serializedApproval } = JSON.parse(
+          String(serializedApprovalResp || '{}'),
+        ) as {
+          serializedTxn: string;
+        };
+        if (!serializedApproval) {
+          return fail({
+            reason: KNOWN_ERRORS.EXECUTION_FAILED,
+            error: 'Approval serialization failed',
+          });
+        }
+        const toSignApproval = ethers.utils.parseTransaction(serializedApproval) as any;
+        delete toSignApproval.v;
+        delete toSignApproval.r;
+        delete toSignApproval.s;
         const approvalSigned = await laUtils.transaction.primitive.signTx({
           sigName: 'bungeeApproval',
           pkpPublicKey,
-          tx: approvalTx,
+          tx: toSignApproval,
         });
         const approvalHash = await laUtils.transaction.primitive.sendTx(provider, approvalSigned);
         console.log(`${logPrefix} Approval sent: ${approvalHash}`);
