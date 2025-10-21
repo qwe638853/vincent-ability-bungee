@@ -304,28 +304,46 @@ export const vincentAbility = createVincentAbility({
             try {
               const feeData = await provider.getFeeData();
               const latest = await provider.getBlock('latest');
-              const base =
-                latest && latest.baseFeePerGas
-                  ? latest.baseFeePerGas
-                  : feeData.lastBaseFeePerGas || feeData.gasPrice || ethers.BigNumber.from('0');
-              const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000'); // 1.5 gwei
-              const bumpedBase = base.mul(12).div(10); // +20%
-              tx.maxPriorityFeePerGas = priority;
-              tx.maxFeePerGas = bumpedBase.add(priority);
+              const base = latest?.baseFeePerGas ?? feeData.lastBaseFeePerGas;
+              if (base) {
+                // EIP-1559
+                const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000'); // 1.5 gwei
+                const bumpedBase = base.mul(12).div(10); // +20%
+                delete (tx as any).gasPrice;
+                (tx as any).type = 2;
+                (tx as any).maxPriorityFeePerGas = priority;
+                (tx as any).maxFeePerGas = bumpedBase.add(priority);
+              } else {
+                // Legacy
+                const hinted = feeData.gasPrice || ethers.BigNumber.from('0');
+                const bumped = hinted.gt(0)
+                  ? hinted.mul(12).div(10)
+                  : ethers.BigNumber.from('20000000');
+                (tx as any).gasPrice = bumped;
+                delete (tx as any).maxPriorityFeePerGas;
+                delete (tx as any).maxFeePerGas;
+                (tx as any).type = 0;
+              }
             } catch {
-              // Legacy fallback
-              tx.gasPrice = ethers.BigNumber.from('20000000');
+              (tx as any).gasPrice = ethers.BigNumber.from('20000000');
+              delete (tx as any).maxPriorityFeePerGas;
+              delete (tx as any).maxFeePerGas;
+              (tx as any).type = 0;
             }
             tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
             return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
           },
         );
 
-        const { serializedTxn: serializedApproval } = JSON.parse(
-          String(serializedApprovalResp || '{}'),
-        ) as {
-          serializedTxn: string;
-        };
+        let serializedApproval: string | undefined;
+        try {
+          const parsed = JSON.parse(String(serializedApprovalResp || '{}')) as {
+            serializedTxn?: string;
+          };
+          serializedApproval = parsed?.serializedTxn;
+        } catch {
+          serializedApproval = undefined;
+        }
         if (!serializedApproval) {
           return fail({
             reason: KNOWN_ERRORS.EXECUTION_FAILED,
@@ -380,29 +398,50 @@ export const vincentAbility = createVincentAbility({
           try {
             const feeData = await provider.getFeeData();
             const latest = await provider.getBlock('latest');
-            const base =
-              latest && latest.baseFeePerGas
-                ? latest.baseFeePerGas
-                : feeData.lastBaseFeePerGas || feeData.gasPrice || ethers.BigNumber.from('0');
-            const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000'); // 1.5 gwei
-            const hinted = best?.gasFee?.gasPrice
-              ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
-              : base;
-            const baseRef = hinted.gt(base) ? hinted : base;
-            const bumpedBase = baseRef.mul(12).div(10); // +20%
-            tx.maxPriorityFeePerGas = priority;
-            tx.maxFeePerGas = bumpedBase.add(priority);
+            const base = latest?.baseFeePerGas ?? feeData.lastBaseFeePerGas;
+            if (base) {
+              // EIP-1559
+              const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000');
+              const hinted = best?.gasFee?.gasPrice
+                ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
+                : base;
+              const baseRef = hinted.gt(base) ? hinted : base;
+              const bumpedBase = baseRef.mul(12).div(10);
+              delete (tx as any).gasPrice;
+              (tx as any).type = 2;
+              (tx as any).maxPriorityFeePerGas = priority;
+              (tx as any).maxFeePerGas = bumpedBase.add(priority);
+            } else {
+              // Legacy
+              const hintedLegacy = best?.gasFee?.gasPrice
+                ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
+                : feeData.gasPrice || ethers.BigNumber.from('0');
+              const bumpedLegacy = hintedLegacy.gt(0)
+                ? hintedLegacy.mul(12).div(10)
+                : ethers.BigNumber.from('20000000');
+              (tx as any).gasPrice = bumpedLegacy;
+              delete (tx as any).maxPriorityFeePerGas;
+              delete (tx as any).maxFeePerGas;
+              (tx as any).type = 0;
+            }
           } catch {
-            tx.gasPrice = await provider.getGasPrice();
+            (tx as any).gasPrice = await provider.getGasPrice();
+            delete (tx as any).maxPriorityFeePerGas;
+            delete (tx as any).maxFeePerGas;
+            (tx as any).type = 0;
           }
           tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
           return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
         },
       );
 
-      const { serializedTxn } = JSON.parse(String(serializedResp || '{}')) as {
-        serializedTxn: string;
-      };
+      let serializedTxn: string | undefined;
+      try {
+        const parsed = JSON.parse(String(serializedResp || '{}')) as { serializedTxn?: string };
+        serializedTxn = parsed?.serializedTxn;
+      } catch {
+        serializedTxn = undefined;
+      }
       if (!serializedTxn) {
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Serialization failed' });
       }
