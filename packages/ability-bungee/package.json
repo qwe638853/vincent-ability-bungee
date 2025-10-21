@@ -1,6 +1,6 @@
 {
   "name": "@qwe638853/ability-bungee",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "A Vincent ability for Bungee single-transaction bridging.",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",

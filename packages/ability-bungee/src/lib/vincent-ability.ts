@@ -17,6 +17,7 @@ import {
   callBungeeAPI,
   checkAndApproveToken,
   getRpcUrl,
+  ERC20_ABI,
 } from './helpers';
 import {
   executeFailSchema,
@@ -292,17 +293,17 @@ export const vincentAbility = createVincentAbility({
           ).needsApproval
         : false;
       if (needsApproval && best?.approvalData) {
-        console.log(`${logPrefix} Building approval tx via Bungee`);
-        const approvalBuild: any = await callBungeeAPI('/bungee/approval/build-tx', 'GET', {
-          ...best.approvalData,
-          owner: pkpAddress,
-        });
+        console.log(`${logPrefix} Building approval tx from approvalData`);
+        const spenderAddress =
+          best.approvalData.spenderAddress || best?.approvalData?.allowanceTarget;
+        const approvalAmount = best.approvalData.amount || amountWei.toString();
+        const tokenAddress = best.approvalData.tokenAddress || sourceTokenRaw;
+        const iface = new ethers.utils.Interface(ERC20_ABI as any);
+        const data = iface.encodeFunctionData('approve', [spenderAddress, approvalAmount]);
         const approvalTx = {
-          to: approvalBuild?.to,
-          data: approvalBuild?.data,
-          value: approvalBuild?.value
-            ? ethers.BigNumber.from(String(approvalBuild.value))
-            : ethers.BigNumber.from('0'),
+          to: tokenAddress,
+          data,
+          value: ethers.BigNumber.from('0'),
           chainId: Number(sourceChain),
         } as any;
         const approvalRequest = { ...approvalTx, from: pkpAddress };
