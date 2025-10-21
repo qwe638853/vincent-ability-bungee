@@ -139,45 +139,35 @@ export const vincentAbility = createVincentAbility({
         inputAmount: amountWei.toString(),
         userAddress: recipient ?? pkpAddress,
         receiverAddress: recipient ?? pkpAddress,
-        uniqueRoutesPerBridge: true,
-        sort: 'output',
-        singleTxOnly: true,
-        isContractCall: false,
         slippage: String(Number(slippageBps) / 100),
+        // Force manual routing and disable auto
+        enableManual: 'true',
+        disableAuto: 'true',
       } as const;
 
       console.log(`${logPrefix} Getting quote from Bungee...`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-      const autoRoute = quoteData?.result?.autoRoute ?? quoteData?.autoRoute;
-      const legacyRoutes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
       const manualRoutes = quoteData?.result?.manualRoutes ?? quoteData?.manualRoutes ?? [];
-
-      if (autoRoute) {
-        return succeed({
-          fromChainId: sourceChain,
-          toChainId: destinationChain,
-          estimatedToAmount: String(autoRoute?.output?.amount ?? '0'),
-          bestRoute: autoRoute,
-        });
-      }
-
-      const candidates = legacyRoutes.length ? legacyRoutes : manualRoutes;
+      const candidates = manualRoutes;
       if (!candidates.length) {
         return fail({
           reason: KNOWN_ERRORS.NO_ROUTE_FOUND,
           error: 'No available routes from Bungee',
         });
       }
-      const best = [...candidates].sort((a: any, b: any) => {
-        const av = BigInt(a?.toAmount ?? '0');
-        const bv = BigInt(b?.toAmount ?? '0');
-        return av === bv ? 0 : av > bv ? -1 : 1;
-      })[0];
+      const getTime = (r: any) =>
+        Number(
+          r?.estimatedTime ??
+            r?.route?.estimatedTime ??
+            r?.estimation?.estimatedTxExecutionTime ??
+            0,
+        );
+      const best = [...candidates].sort((a: any, b: any) => getTime(a) - getTime(b))[0];
 
       return succeed({
         fromChainId: sourceChain,
         toChainId: destinationChain,
-        estimatedToAmount: String(best?.toAmount ?? best?.output?.amount ?? '0'),
+        estimatedToAmount: String(best?.output?.amount ?? best?.toAmount ?? '0'),
         bestRoute: best,
       });
     } catch (error) {
@@ -250,37 +240,30 @@ export const vincentAbility = createVincentAbility({
         inputAmount: amountWei.toString(),
         userAddress: recipient ?? pkpAddress,
         receiverAddress: recipient ?? pkpAddress,
-        uniqueRoutesPerBridge: true,
-        sort: 'output',
-        singleTxOnly: true,
-        isContractCall: false,
         slippage: String(Number(slippageBps) / 100),
+        enableManual: 'true',
+        disableAuto: 'true',
       };
       console.log(`${logPrefix} Fetching quote`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-      const autoRoute = quoteData?.result?.autoRoute ?? quoteData?.autoRoute;
-      const legacyRoutes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
       const manualRoutes = quoteData?.result?.manualRoutes ?? quoteData?.manualRoutes ?? [];
-      const candidates = autoRoute
-        ? [autoRoute]
-        : legacyRoutes.length
-          ? legacyRoutes
-          : manualRoutes;
+      const candidates = manualRoutes;
       if (!candidates.length) {
         return fail({
           reason: KNOWN_ERRORS.NO_ROUTE_FOUND,
           error: 'No available routes from Bungee',
         });
       }
-      const best = autoRoute
-        ? autoRoute
-        : [...candidates].sort((a: any, b: any) => {
-            const av = BigInt(a?.toAmount ?? a?.output?.amount ?? '0');
-            const bv = BigInt(b?.toAmount ?? b?.output?.amount ?? '0');
-            return av === bv ? 0 : av > bv ? -1 : 1;
-          })[0];
+      const getTime = (r: any) =>
+        Number(
+          r?.estimatedTime ??
+            r?.route?.estimatedTime ??
+            r?.estimation?.estimatedTxExecutionTime ??
+            0,
+        );
+      const best = [...candidates].sort((a: any, b: any) => getTime(a) - getTime(b))[0];
 
-      // Optional ERC20 approval (on-chain check). If insufficient, try building approval tx via API.
+      // Optional ERC20 approval (on-chain check). If insufficient, prepare approval tx via approvalData.
       const needsApproval = !isNativeToken(sourceTokenRaw)
         ? (
             await checkAndApproveToken(
@@ -319,24 +302,17 @@ export const vincentAbility = createVincentAbility({
         console.log(`${logPrefix} Approval sent: ${approvalHash}`);
       }
       console.log(`${logPrefix} Best route:`, best);
-      // Build bridge tx
-      let txData: any;
-      if (autoRoute && autoRoute?.txData) {
-        txData = autoRoute.txData;
-      } else {
-        console.log(`${logPrefix} Building route tx via Bungee`);
-        // Always prefer quoteId per API; do not send route JSON to avoid RouteId errors
-        const quoteId = (autoRoute && autoRoute.quoteId) || (best && best.quoteId);
-        if (!quoteId) {
-          return fail({
-            reason: KNOWN_ERRORS.EXECUTION_FAILED,
-            error: 'Missing quoteId for build-tx. Please re-fetch quote and retry quickly.',
-          });
-        }
-        const buildParams: Record<string, any> = { quoteId };
-        const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', buildParams);
-        txData = built?.result?.tx || built?.tx || built; // handle variants
+      // Build bridge tx via quoteId (manual route)
+      const topLevelQuoteId = quoteData?.result?.quoteId ?? quoteData?.quoteId;
+      const quoteId = best?.quoteId ?? best?.route?.quoteId ?? topLevelQuoteId;
+      if (!quoteId) {
+        return fail({
+          reason: KNOWN_ERRORS.EXECUTION_FAILED,
+          error: 'Missing quoteId for build-tx. Please re-fetch quote and retry quickly.',
+        });
       }
+      const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', { quoteId });
+      const txData: any = built?.result?.tx || built?.tx || built; // handle variants
       if (!txData?.to || !txData?.data) {
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
       }
@@ -354,17 +330,9 @@ export const vincentAbility = createVincentAbility({
             chainId: Number(sourceChain),
           };
           const txRequest = { ...tx, from: pkpAddress };
-          // Prefer provided gas from autoRoute; fallback to RPC
-          if (autoRoute?.gasFee?.gasLimit) {
-            tx.gasLimit = ethers.BigNumber.from(String(autoRoute.gasFee.gasLimit));
-          } else {
-            tx.gasLimit = await provider.estimateGas(txRequest);
-          }
-          if (autoRoute?.gasFee?.gasPrice) {
-            tx.gasPrice = ethers.BigNumber.from(String(autoRoute.gasFee.gasPrice));
-          } else {
-            tx.gasPrice = await provider.getGasPrice();
-          }
+          // Estimate gas and get gas price via provider (manual route context)
+          tx.gasLimit = await provider.estimateGas(txRequest);
+          tx.gasPrice = await provider.getGasPrice();
           tx.nonce = await provider.getTransactionCount(pkpAddress);
           return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
         },
