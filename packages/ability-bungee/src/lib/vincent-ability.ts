@@ -308,7 +308,7 @@ export const vincentAbility = createVincentAbility({
             } catch {
               tx.gasPrice = ethers.BigNumber.from('10000000');
             }
-            tx.nonce = await provider.getTransactionCount(pkpAddress);
+            tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
             return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
           },
         );
@@ -374,7 +374,7 @@ export const vincentAbility = createVincentAbility({
           } else {
             tx.gasPrice = await provider.getGasPrice();
           }
-          tx.nonce = await provider.getTransactionCount(pkpAddress);
+          tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
           return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
         },
       );
