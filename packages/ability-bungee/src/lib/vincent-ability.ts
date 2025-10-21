@@ -324,11 +324,11 @@ export const vincentAbility = createVincentAbility({
         txData = autoRoute.txData;
       } else {
         console.log(`${logPrefix} Building route tx via Bungee`);
-        const buildPayload: Record<string, any> = {
-          route: best,
+        // Per latest docs, use GET /api/v1/bungee/build-tx
+        const built: any = await callBungeeAPI('/bungee/build-tx', 'GET', {
+          route: JSON.stringify(best),
           userAddress: pkpAddress,
-        };
-        const built: any = await callBungeeAPI('/bungee/server/build-tx', 'POST', buildPayload);
+        });
         txData = built?.result?.tx || built?.tx || built; // handle variants
       }
       if (!txData?.to || !txData?.data) {
