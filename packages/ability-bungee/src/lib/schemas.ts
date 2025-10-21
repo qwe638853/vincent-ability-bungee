@@ -22,6 +22,8 @@ export const abilityParamsSchema = z.object({
   amount: z.string().regex(/^\d+$/, 'Amount must be integer string'),
   recipient: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid recipient address'),
   slippageBps: z.number().int().min(1).max(1000).optional().default(100),
+  separateApproval: z.boolean().optional().default(true),
+  bridgeTxData: z.any().optional(),
 });
 
 /**
@@ -51,13 +53,27 @@ export const precheckFailSchema = z.object({
 /**
  * Execute success result schema
  */
-export const executeSuccessSchema = z.object({
-  txHash: z.string(),
-  routeSummary: z.any().optional(),
-  fromChainId: z.union([z.string(), z.number()]),
-  toChainId: z.union([z.string(), z.number()]),
-  timestamp: z.number(),
-});
+export const executeSuccessSchema = z.union([
+  z.object({
+    // bridge 成功
+    txHash: z.string(),
+    routeSummary: z.any().optional(),
+    fromChainId: z.union([z.string(), z.number()]),
+    toChainId: z.union([z.string(), z.number()]),
+    timestamp: z.number(),
+  }),
+  z.object({
+    // 兩段模式：僅完成 approve
+    approvalTxHash: z.string(),
+    bridgeTxData: z.any(),
+    quoteId: z.string().optional(),
+    requestHash: z.string().optional(),
+    fromChainId: z.union([z.string(), z.number()]),
+    toChainId: z.union([z.string(), z.number()]),
+    timestamp: z.number(),
+    nextStep: z.literal('send-bridge-tx'),
+  }),
+]);
 
 /**
  * Execute failure result schema

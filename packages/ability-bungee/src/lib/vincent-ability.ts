@@ -4,7 +4,6 @@ import {
   createVincentAbility,
   supportedPoliciesForAbility,
 } from '@lit-protocol/vincent-ability-sdk';
-import { laUtils } from '@lit-protocol/vincent-scaffold-sdk';
 
 import type { AbilityParams } from './schemas';
 
@@ -17,7 +16,6 @@ import {
   callBungeeAPI,
   checkAndApproveToken,
   getRpcUrl,
-  ERC20_ABI,
 } from './helpers';
 import {
   executeFailSchema,
@@ -27,9 +25,11 @@ import {
   abilityParamsSchema,
   KNOWN_ERRORS,
 } from './schemas';
+//import { laUtils } from '@lit-protocol/vincent-scaffold-sdk';
+import { sendErc20ApproveRunOnce } from './tx/approve';
+import { sendBridgeRunOnce } from './tx/bridge';
 
 // declare const Lit: typeof LitNamespace;
-declare const Lit: any;
 
 export const vincentAbility = createVincentAbility({
   packageName: '@lit-protocol/ability-bungee' as const,
@@ -41,10 +41,8 @@ export const vincentAbility = createVincentAbility({
   executeSuccessSchema,
   executeFailSchema,
 
-  precheck: async (
-    { abilityParams }: { abilityParams: AbilityParams },
-    { fail, succeed, delegation }: { fail: any; succeed: any; delegation: any },
-  ) => {
+  precheck: async ({ abilityParams }: { abilityParams: AbilityParams }, context) => {
+    const { fail, succeed, delegation } = context as any;
     const logPrefix = '[@lit-protocol/ability-bungee/precheck]';
     const {
       rpcUrl,
@@ -189,10 +187,8 @@ export const vincentAbility = createVincentAbility({
     }
   },
 
-  execute: async (
-    { abilityParams }: { abilityParams: AbilityParams },
-    { succeed, fail, delegation }: { succeed: any; fail: any; delegation: any },
-  ) => {
+  execute: async ({ abilityParams }: { abilityParams: AbilityParams }, context) => {
+    const { succeed, fail, delegation } = context as any;
     const logPrefix = '[@lit-protocol/ability-bungee/execute]';
     try {
       const {
@@ -204,6 +200,8 @@ export const vincentAbility = createVincentAbility({
         amount,
         recipient,
         slippageBps = 100,
+        separateApproval = true,
+        bridgeTxData,
       } = abilityParams;
 
       const sourceChain = String(fromChainId);
@@ -242,29 +240,37 @@ export const vincentAbility = createVincentAbility({
       // Prepare amount（已為最小單位）
       const amountWei = ethers.BigNumber.from(String(amount));
 
-      // Quote routes
-      const quoteParams: Record<string, any> = {
-        originChainId: sourceChain,
-        destinationChainId: destinationChain,
-        inputToken: sourceTokenForQuote,
-        outputToken: destinationToken,
-        inputAmount: amountWei.toString(),
-        userAddress: recipient ?? pkpAddress,
-        receiverAddress: recipient ?? pkpAddress,
-        uniqueRoutesPerBridge: true,
-        sort: 'output',
-        singleTxOnly: true,
-        isContractCall: false,
-        useInbox: true,
-        slippage: String(Number(slippageBps) / 100),
-      };
-      console.log(`${logPrefix} Fetching quote`, quoteParams);
-      const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-      const best = quoteData.result.autoRoute;
-      const quoteId = quoteData.result.autoRoute.quoteId;
-      const requestType = quoteData.result.autoRoute.requestType;
-      console.log('-Quote ID:', quoteId);
-      console.log('-Request Type:', requestType);
+      // If bridgeTxData is provided, skip quoting
+      let best: any = undefined;
+      let quoteId: any = undefined;
+      let requestHash: any = undefined;
+      let txData: any = bridgeTxData || undefined;
+      if (!txData) {
+        const quoteParams: Record<string, any> = {
+          originChainId: sourceChain,
+          destinationChainId: destinationChain,
+          inputToken: sourceTokenForQuote,
+          outputToken: destinationToken,
+          inputAmount: amountWei.toString(),
+          userAddress: recipient ?? pkpAddress,
+          receiverAddress: recipient ?? pkpAddress,
+          uniqueRoutesPerBridge: true,
+          sort: 'output',
+          singleTxOnly: true,
+          isContractCall: false,
+          useInbox: true,
+          slippage: String(Number(slippageBps) / 100),
+        };
+        console.log(`${logPrefix} Fetching quote`, quoteParams);
+        const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
+        best = quoteData.result.autoRoute;
+        quoteId = quoteData.result.autoRoute.quoteId;
+        const requestType = quoteData.result.autoRoute.requestType;
+        requestHash = quoteData.result.autoRoute.requestHash;
+        console.log('-Quote ID:', quoteId);
+        console.log('-Request Type:', requestType);
+        txData = best?.txData;
+      }
 
       // Optional ERC20 approval (on-chain check). If insufficient, try building approval tx via API.
       const needsApproval = !isNativeToken(sourceTokenRaw)
@@ -280,91 +286,42 @@ export const vincentAbility = createVincentAbility({
         : false;
       if (needsApproval && best?.approvalData) {
         console.log(`${logPrefix} Building approval tx from approvalData`);
-        const spenderAddress = best.approvalData.spenderAddress;
+        const spenderAddress =
+          best.approvalData.spenderAddress || best?.approvalData?.allowanceTarget;
         const approvalAmount = best.approvalData.amount || amountWei.toString();
         const tokenAddress = best.approvalData.tokenAddress || sourceTokenRaw;
-        const iface = new ethers.utils.Interface(ERC20_ABI as any);
-        const data = iface.encodeFunctionData('approve', [spenderAddress, approvalAmount]);
-
-        const serializedApprovalResp = await Lit.Actions.runOnce(
-          { waitForResponse: true, name: 'bungeeSerializedApproval' },
-          async () => {
-            const tx: any = {
-              to: tokenAddress,
-              data,
-              value: ethers.BigNumber.from('0'),
-              chainId: Number(sourceChain),
-            };
-            const txRequest = { ...tx, from: pkpAddress };
-            try {
-              tx.gasLimit = await provider.estimateGas(txRequest);
-            } catch {
-              tx.gasLimit = ethers.BigNumber.from('120000');
-            }
-            try {
-              const feeData = await provider.getFeeData();
-              const latest = await provider.getBlock('latest');
-              const base = latest?.baseFeePerGas ?? feeData.lastBaseFeePerGas;
-              if (base) {
-                // EIP-1559
-                const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000'); // 1.5 gwei
-                const bumpedBase = base.mul(12).div(10); // +20%
-                delete (tx as any).gasPrice;
-                (tx as any).type = 2;
-                (tx as any).maxPriorityFeePerGas = priority;
-                (tx as any).maxFeePerGas = bumpedBase.add(priority);
-              } else {
-                // Legacy
-                const hinted = feeData.gasPrice || ethers.BigNumber.from('0');
-                const bumped = hinted.gt(0)
-                  ? hinted.mul(12).div(10)
-                  : ethers.BigNumber.from('20000000');
-                (tx as any).gasPrice = bumped;
-                delete (tx as any).maxPriorityFeePerGas;
-                delete (tx as any).maxFeePerGas;
-                (tx as any).type = 0;
-              }
-            } catch {
-              (tx as any).gasPrice = ethers.BigNumber.from('20000000');
-              delete (tx as any).maxPriorityFeePerGas;
-              delete (tx as any).maxFeePerGas;
-              (tx as any).type = 0;
-            }
-            tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
-            return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
-          },
-        );
-
-        let serializedApproval: string | undefined;
-        try {
-          const parsed = JSON.parse(String(serializedApprovalResp || '{}')) as {
-            serializedTxn?: string;
-          };
-          serializedApproval = parsed?.serializedTxn;
-        } catch {
-          serializedApproval = undefined;
-        }
-        if (!serializedApproval) {
-          return fail({
-            reason: KNOWN_ERRORS.EXECUTION_FAILED,
-            error: 'Approval serialization failed',
-          });
-        }
-        const toSignApproval = ethers.utils.parseTransaction(serializedApproval) as any;
-        delete toSignApproval.v;
-        delete toSignApproval.r;
-        delete toSignApproval.s;
-        const approvalSigned = await laUtils.transaction.primitive.signTx({
-          sigName: 'bungeeApproval',
+        const { txHash: approvalHash, usedNonce } = await sendErc20ApproveRunOnce({
+          provider,
+          pkpAddress,
           pkpPublicKey,
-          tx: toSignApproval,
+          sourceChain,
+          tokenAddress,
+          spenderAddress,
+          amount: approvalAmount,
         });
-        const approvalHash = await laUtils.transaction.primitive.sendTx(provider, approvalSigned);
         console.log(`${logPrefix} Approval sent: ${approvalHash}`);
+        if (separateApproval) {
+          return succeed({
+            approvalTxHash: approvalHash,
+            bridgeTxData: txData,
+            quoteId,
+            requestHash,
+            fromChainId: sourceChain,
+            toChainId: destinationChain,
+            timestamp: Date.now(),
+            nextStep: 'send-bridge-tx',
+          } as any);
+        }
+        // Stash used approval nonce for next tx
+        const approvalUsedNonce = usedNonce ? ethers.BigNumber.from(usedNonce) : undefined;
+        // Pass down via closure variable for bridge step
+        (globalThis as any).__bungeeApprovalNonce = approvalUsedNonce
+          ? approvalUsedNonce.toString()
+          : undefined;
       }
       console.log(`${logPrefix} Best route:`, best);
-      // Build bridge tx - use autoRoute.txData directly per Auto Inbox flow
-      const txData: any = best.txData;
+      // Build bridge tx - use provided or autoRoute.txData per Auto Inbox flow
+      // txData already set above
       if (!txData) {
         return fail({
           reason: KNOWN_ERRORS.EXECUTION_FAILED,
@@ -375,88 +332,15 @@ export const vincentAbility = createVincentAbility({
       if (!txData?.to || !txData?.data) {
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
       }
-
-      // Prepare and serialize tx inside runOnce to minimize per-node work
-      const serializedResp = await Lit.Actions.runOnce(
-        { waitForResponse: true, name: 'bungeeSerializedTxn' },
-        async () => {
-          const tx: any = {
-            to: txData.to,
-            data: txData.data,
-            value: txData.value
-              ? ethers.BigNumber.from(String(txData.value))
-              : ethers.BigNumber.from('0'),
-            chainId: Number(sourceChain),
-          };
-          const txRequest = { ...tx, from: pkpAddress };
-          // Prefer provided gas from autoRoute; fallback to RPC
-          if (best?.gasFee?.gasLimit) {
-            tx.gasLimit = ethers.BigNumber.from(String(best.gasFee.gasLimit));
-          } else {
-            tx.gasLimit = await provider.estimateGas(txRequest);
-          }
-          try {
-            const feeData = await provider.getFeeData();
-            const latest = await provider.getBlock('latest');
-            const base = latest?.baseFeePerGas ?? feeData.lastBaseFeePerGas;
-            if (base) {
-              // EIP-1559
-              const priority = feeData.maxPriorityFeePerGas || ethers.BigNumber.from('1500000');
-              const hinted = best?.gasFee?.gasPrice
-                ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
-                : base;
-              const baseRef = hinted.gt(base) ? hinted : base;
-              const bumpedBase = baseRef.mul(12).div(10);
-              delete (tx as any).gasPrice;
-              (tx as any).type = 2;
-              (tx as any).maxPriorityFeePerGas = priority;
-              (tx as any).maxFeePerGas = bumpedBase.add(priority);
-            } else {
-              // Legacy
-              const hintedLegacy = best?.gasFee?.gasPrice
-                ? ethers.BigNumber.from(String(best.gasFee.gasPrice))
-                : feeData.gasPrice || ethers.BigNumber.from('0');
-              const bumpedLegacy = hintedLegacy.gt(0)
-                ? hintedLegacy.mul(12).div(10)
-                : ethers.BigNumber.from('20000000');
-              (tx as any).gasPrice = bumpedLegacy;
-              delete (tx as any).maxPriorityFeePerGas;
-              delete (tx as any).maxFeePerGas;
-              (tx as any).type = 0;
-            }
-          } catch {
-            (tx as any).gasPrice = await provider.getGasPrice();
-            delete (tx as any).maxPriorityFeePerGas;
-            delete (tx as any).maxFeePerGas;
-            (tx as any).type = 0;
-          }
-          tx.nonce = await provider.getTransactionCount(pkpAddress, 'pending');
-          return JSON.stringify({ serializedTxn: ethers.utils.serializeTransaction(tx) });
-        },
-      );
-
-      let serializedTxn: string | undefined;
-      try {
-        const parsed = JSON.parse(String(serializedResp || '{}')) as { serializedTxn?: string };
-        serializedTxn = parsed?.serializedTxn;
-      } catch {
-        serializedTxn = undefined;
-      }
-      if (!serializedTxn) {
-        return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Serialization failed' });
-      }
-      const toSign = ethers.utils.parseTransaction(serializedTxn) as any;
-      delete toSign.v;
-      delete toSign.r;
-      delete toSign.s;
-
-      // Sign & send via PKP
-      const signed = await laUtils.transaction.primitive.signTx({
-        sigName: 'bungeeSingleTxBridge',
+      const { txHash } = await sendBridgeRunOnce({
+        provider,
+        pkpAddress,
         pkpPublicKey,
-        tx: toSign,
+        sourceChain,
+        txData,
+        gasHints: { gasLimit: best?.gasFee?.gasLimit, gasPrice: best?.gasFee?.gasPrice },
+        approvalUsedNonce: (globalThis as any).__bungeeApprovalNonce,
       });
-      const txHash = await laUtils.transaction.primitive.sendTx(provider, signed);
       console.log(`${logPrefix} Bridge tx sent: ${txHash}`);
 
       return succeed({
