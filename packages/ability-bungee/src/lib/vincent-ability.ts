@@ -142,7 +142,7 @@ export const vincentAbility = createVincentAbility({
         sort: 'output',
         singleTxOnly: true,
         isContractCall: false,
-        slippage: slippageBps,
+        slippage: String(Number(slippageBps) / 100),
       } as const;
 
       console.log(`${logPrefix} Getting quote from Bungee...`, quoteParams);
@@ -253,7 +253,7 @@ export const vincentAbility = createVincentAbility({
         sort: 'output',
         singleTxOnly: true,
         isContractCall: false,
-        slippage: slippageBps,
+        slippage: String(Number(slippageBps) / 100),
       };
       console.log(`${logPrefix} Fetching quote`, quoteParams);
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
