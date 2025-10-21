@@ -54,3 +54,5 @@ screenshots
 
 *.tsbuildinfo
 .ts-trace
+
+./vincent-starter-app
