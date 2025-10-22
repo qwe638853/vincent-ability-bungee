@@ -24,6 +24,9 @@ export const abilityParamsSchema = z.object({
   slippageBps: z.number().int().min(1).max(1000).optional().default(100),
   separateApproval: z.boolean().optional().default(true),
   bridgeTxData: z.any().optional(),
+  isSponsored: z.boolean().optional().default(false),
+  sponsorApiKey: z.string().optional(),
+  sponsorPolicyId: z.string().optional(),
 });
 
 /**

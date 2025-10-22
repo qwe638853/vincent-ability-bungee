@@ -28,6 +28,7 @@ import {
 //import { laUtils } from '@lit-protocol/vincent-scaffold-sdk';
 import { sendErc20ApproveRunOnce } from './tx/approve';
 import { sendBridgeRunOnce } from './tx/bridge';
+import { sendSponsoredApprove, sendSponsoredBridge } from './tx/sponsored';
 
 // declare const Lit: typeof LitNamespace;
 
@@ -202,6 +203,9 @@ export const vincentAbility = createVincentAbility({
         slippageBps = 100,
         separateApproval = true,
         bridgeTxData,
+        isSponsored = false,
+        sponsorApiKey,
+        sponsorPolicyId,
       } = abilityParams;
 
       const sourceChain = String(fromChainId);
@@ -290,15 +294,39 @@ export const vincentAbility = createVincentAbility({
           best.approvalData.spenderAddress || best?.approvalData?.allowanceTarget;
         const approvalAmount = best.approvalData.amount || amountWei.toString();
         const tokenAddress = best.approvalData.tokenAddress || sourceTokenRaw;
-        const { txHash: approvalHash, usedNonce } = await sendErc20ApproveRunOnce({
-          provider,
-          pkpAddress,
-          pkpPublicKey,
-          sourceChain,
-          tokenAddress,
-          spenderAddress,
-          amount: approvalAmount,
-        });
+        let approvalHash: string;
+        let usedNonce: string | undefined;
+        if (isSponsored) {
+          if (!sponsorApiKey || !sponsorPolicyId) {
+            return fail({
+              reason: KNOWN_ERRORS.EXECUTION_FAILED,
+              error: 'Missing sponsorApiKey/sponsorPolicyId',
+            });
+          }
+          const res = await sendSponsoredApprove({
+            pkpPublicKey,
+            pkpEthAddress: pkpAddress,
+            chainId: Number(sourceChain),
+            tokenAddress,
+            spenderAddress,
+            amount: approvalAmount,
+            sponsorApiKey,
+            sponsorPolicyId,
+          });
+          approvalHash = res.txHash;
+        } else {
+          const res = await sendErc20ApproveRunOnce({
+            provider,
+            pkpAddress,
+            pkpPublicKey,
+            sourceChain,
+            tokenAddress,
+            spenderAddress,
+            amount: approvalAmount,
+          });
+          approvalHash = res.txHash;
+          usedNonce = res.usedNonce;
+        }
         console.log(`${logPrefix} Approval sent: ${approvalHash}`);
         if (separateApproval) {
           return succeed({
@@ -332,15 +360,36 @@ export const vincentAbility = createVincentAbility({
       if (!txData?.to || !txData?.data) {
         return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
       }
-      const { txHash } = await sendBridgeRunOnce({
-        provider,
-        pkpAddress,
-        pkpPublicKey,
-        sourceChain,
-        txData,
-        gasHints: { gasLimit: best?.gasFee?.gasLimit, gasPrice: best?.gasFee?.gasPrice },
-        approvalUsedNonce: (globalThis as any).__bungeeApprovalNonce,
-      });
+      let txHash: string;
+      if (isSponsored) {
+        if (!sponsorApiKey || !sponsorPolicyId) {
+          return fail({
+            reason: KNOWN_ERRORS.EXECUTION_FAILED,
+            error: 'Missing sponsorApiKey/sponsorPolicyId',
+          });
+        }
+        const res = await sendSponsoredBridge({
+          pkpPublicKey,
+          chainId: Number(sourceChain),
+          to: txData.to,
+          data: txData.data,
+          value: txData.value,
+          sponsorApiKey,
+          sponsorPolicyId,
+        });
+        txHash = res.txHash;
+      } else {
+        const res = await sendBridgeRunOnce({
+          provider,
+          pkpAddress,
+          pkpPublicKey,
+          sourceChain,
+          txData,
+          gasHints: { gasLimit: best?.gasFee?.gasLimit, gasPrice: best?.gasFee?.gasPrice },
+          approvalUsedNonce: (globalThis as any).__bungeeApprovalNonce,
+        });
+        txHash = res.txHash;
+      }
       console.log(`${logPrefix} Bridge tx sent: ${txHash}`);
 
       return succeed({

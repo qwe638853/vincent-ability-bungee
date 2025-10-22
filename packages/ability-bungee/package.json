@@ -1,6 +1,6 @@
 {
   "name": "@qwe638853/ability-bungee",
-  "version": "0.0.26",
+  "version": "0.0.27",
   "description": "A Vincent ability for Bungee single-transaction bridging.",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
@@ -14,14 +14,14 @@
   },
   "dependencies": {
     "@lit-protocol/vincent-ability-sdk": "^2.0.0",
-    "@lit-protocol/vincent-scaffold-sdk": "^2.0.0",
+    "@lit-protocol/vincent-scaffold-sdk": "1.1.9-mma",
     "ethers": "5.8.0",
     "tslib": "2.8.1",
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "esbuild": "0.19.12",
     "@lit-protocol/esbuild-plugin-polyfill-node": "^0.3.0",
+    "esbuild": "0.19.12",
     "ipfs-only-hash": "4.0.0"
   },
   "peerDependencies": {
