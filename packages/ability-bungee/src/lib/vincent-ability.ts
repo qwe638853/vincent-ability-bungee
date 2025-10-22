@@ -253,7 +253,8 @@ export const vincentAbility = createVincentAbility({
       const requestType = quoteData.result.autoRoute.requestType;
       console.log('-Quote ID:', quoteId);
       console.log('-Request Type:', requestType);
-      // If Bungee returned a Permit2 signTypedData payload, sign and submit immediately
+      console.log('-Best:', best);
+      // If Bungee returned a Permit2 signTypedData payload, sign it inside the Lit Action
       if (best?.signTypedData) {
         const signTypedData = best.signTypedData;
         const witness = signTypedData?.values?.witness ?? undefined;
@@ -277,26 +278,22 @@ export const vincentAbility = createVincentAbility({
             s: '0x' + parsed.s,
             v: parsed.v,
           });
-          const request = witness;
-          // Submit signed request + quoteId to Bungee
-          const submitBody = { requestType, request, userSignature, quoteId };
-          const submitResp: any = await callBungeeAPI('/bungee/submit', 'POST', submitBody);
-          const requestHash = submitResp?.result?.requestHash;
-          if (!requestHash) {
-            return fail({
-              reason: KNOWN_ERRORS.EXECUTION_FAILED,
-              error: `Submit failed: ${JSON.stringify(submitResp)}`,
-            });
-          }
-          // Success: return result to client for status polling
+          // LOG: signed inside Lit (mask signature to avoid leaks)
+          console.log(`${logPrefix} Signed typed data`, {
+            quoteId,
+            requestType,
+            sigPreview: `${userSignature.slice(0, 12)}...${userSignature.slice(-8)}`,
+          });
+          // Return typed data for client/server submission, keeping signature internal to logs
           return succeed({
             requestType,
             quoteId,
-            requestHash,
+            signTypedData,
+            witness,
             fromChainId: sourceChain,
             toChainId: destinationChain,
             timestamp: Date.now(),
-            nextStep: 'permit2-status',
+            nextStep: 'permit2-submit',
           } as any);
         } catch (e) {
           // If signature or submission fails, return as execution failed
