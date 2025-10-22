@@ -5,18 +5,10 @@ import {
   supportedPoliciesForAbility,
 } from '@lit-protocol/vincent-ability-sdk';
 
+import type { LitNamespace } from '../Lit';
 import type { AbilityParams } from './schemas';
 
-import {
-  isNativeToken,
-  validateChainId,
-  validateAddress,
-  NATIVE_TOKEN_ADDRESS,
-  getTokenBalance,
-  callBungeeAPI,
-  checkAndApproveToken,
-  getRpcUrl,
-} from './helpers';
+import { validateChainId, validateAddress, NATIVE_TOKEN_ADDRESS, callBungeeAPI } from './helpers';
 import {
   executeFailSchema,
   executeSuccessSchema,
@@ -25,13 +17,17 @@ import {
   abilityParamsSchema,
   KNOWN_ERRORS,
 } from './schemas';
-//import { laUtils } from '@lit-protocol/vincent-scaffold-sdk';
-import { sendErc20ApproveRunOnce } from './tx/approve';
-import { sendBridgeRunOnce } from './tx/bridge';
-import { sendSponsoredApprove, sendSponsoredBridge } from './tx/sponsored';
+declare const Lit: typeof LitNamespace;
 
-// declare const Lit: typeof LitNamespace;
+// Only Permit2 flow is used; raw transaction helpers and sponsored helpers are removed.
 
+/**
+ * vincentAbility provides Bungee-powered cross-chain transfer using Permit2 approvals.
+ *
+ * - The `precheck` returns the best available quote and route from Bungee.
+ * - The `execute` will fetch the best route, then if Permit2 EIP-712 data is available,
+ *   sign it inside the Lit Action with the delegated PKP, and submit it to Bungee for execution.
+ */
 export const vincentAbility = createVincentAbility({
   packageName: '@lit-protocol/ability-bungee' as const,
   abilityParamsSchema: abilityParamsSchema,
@@ -42,11 +38,14 @@ export const vincentAbility = createVincentAbility({
   executeSuccessSchema,
   executeFailSchema,
 
+  /**
+   * Precheck: Validate params, get the best route and to-amount from Bungee.
+   * Fails early on invalid addresses or if quote is unavailable.
+   */
   precheck: async ({ abilityParams }: { abilityParams: AbilityParams }, context) => {
     const { fail, succeed, delegation } = context as any;
     const logPrefix = '[@lit-protocol/ability-bungee/precheck]';
     const {
-      rpcUrl,
       fromChainId,
       toChainId,
       fromToken,
@@ -61,6 +60,7 @@ export const vincentAbility = createVincentAbility({
     const destinationTokenRaw = toToken;
     const pkpAddress = delegation.delegatorPkpInfo.ethAddress;
     try {
+      // Chain ID checks
       if (!validateChainId(String(sourceChain))) {
         return fail({
           reason: KNOWN_ERRORS.INVALID_CHAIN,
@@ -73,21 +73,22 @@ export const vincentAbility = createVincentAbility({
           error: `Invalid destination chain ID: ${destinationChain}`,
         });
       }
+      // Token address checks
       if (!validateAddress(sourceTokenRaw)) {
         return fail({
           reason: KNOWN_ERRORS.INVALID_TOKEN,
           error: `Invalid source token address: ${sourceTokenRaw}`,
         });
       }
+      // If the target token is native, use Bungee's native token placeholder address
       const destinationToken =
         destinationTokenRaw?.toLowerCase?.() === NATIVE_TOKEN_ADDRESS.toLowerCase()
-          ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' // Bungee 原生幣占位
+          ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' // Bungee native token placeholder
           : destinationTokenRaw;
       const sourceTokenForQuote =
         sourceTokenRaw?.toLowerCase?.() === NATIVE_TOKEN_ADDRESS.toLowerCase()
           ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
           : sourceTokenRaw;
-
       if (!validateAddress(destinationToken)) {
         return fail({
           reason: KNOWN_ERRORS.INVALID_TOKEN,
@@ -100,19 +101,7 @@ export const vincentAbility = createVincentAbility({
           error: 'Source and destination chains must be different for bridging',
         });
       }
-
-      // 2) Provider / 網路一致性
-      const rpcForPrecheck = rpcUrl || (await getRpcUrl(sourceChain));
-      const provider = new ethers.providers.JsonRpcProvider(rpcForPrecheck);
-      const network = await provider.getNetwork();
-      if (String(network.chainId) !== String(sourceChain)) {
-        return fail({
-          reason: KNOWN_ERRORS.INVALID_CHAIN,
-          error: `RPC URL chain ID (${network.chainId}) does not match source chain ID (${sourceChain})`,
-        });
-      }
-
-      // 3) 金額（已為最小單位）+ 餘額檢查
+      // Amount (in smallest unit) validation
       let amountWei;
       try {
         amountWei = ethers.BigNumber.from(String(amount));
@@ -123,13 +112,7 @@ export const vincentAbility = createVincentAbility({
         });
       }
 
-      const balance = await getTokenBalance(provider, sourceTokenRaw, pkpAddress);
-      if (balance.lt(amountWei)) {
-        return fail({
-          reason: KNOWN_ERRORS.ESTIMATION_TOO_LOW,
-          error: `Insufficient balance. Have: ${balance.toString()}, Need: ${amountWei.toString()}`,
-        });
-      }
+      // Prepare quote request params for Bungee
       const quoteParams = {
         originChainId: sourceChain,
         destinationChainId: destinationChain,
@@ -147,12 +130,15 @@ export const vincentAbility = createVincentAbility({
       } as const;
 
       console.log(`${logPrefix} Getting quote from Bungee...`, quoteParams);
+      // Call Bungee API to fetch optimal route/quotes
       const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
+      // Pick out available routes, prioritizing autoRoute if available
       const autoRoute = quoteData?.result?.autoRoute ?? quoteData?.autoRoute;
       const legacyRoutes = quoteData?.result?.routes ?? quoteData?.routes ?? [];
       const manualRoutes = quoteData?.result?.manualRoutes ?? quoteData?.manualRoutes ?? [];
 
       if (autoRoute) {
+        // Success: autoRoute found, return output and route
         return succeed({
           fromChainId: sourceChain,
           toChainId: destinationChain,
@@ -160,7 +146,7 @@ export const vincentAbility = createVincentAbility({
           bestRoute: autoRoute,
         });
       }
-
+      // If no autoRoute, try legacy or manual routes
       const candidates = legacyRoutes.length ? legacyRoutes : manualRoutes;
       if (!candidates.length) {
         return fail({
@@ -168,6 +154,7 @@ export const vincentAbility = createVincentAbility({
           error: 'No available routes from Bungee',
         });
       }
+      // Pick the route with the highest output amount
       const best = [...candidates].sort((a: any, b: any) => {
         const av = BigInt(a?.toAmount ?? '0');
         const bv = BigInt(b?.toAmount ?? '0');
@@ -188,12 +175,19 @@ export const vincentAbility = createVincentAbility({
     }
   },
 
+  /**
+   * execute: Get best Bungee route, sign and submit with Permit2 if supported.
+   *
+   * - Validates chains and tokens.
+   * - Fetches autoRoute as in precheck.
+   * - If Permit2 signTypedData payload is returned, signs it using PKP and submits to Bungee.
+   * - Returns requestHash for bridge transaction polling.
+   */
   execute: async ({ abilityParams }: { abilityParams: AbilityParams }, context) => {
     const { succeed, fail, delegation } = context as any;
     const logPrefix = '[@lit-protocol/ability-bungee/execute]';
     try {
       const {
-        rpcUrl,
         fromChainId,
         toChainId,
         fromToken,
@@ -201,11 +195,6 @@ export const vincentAbility = createVincentAbility({
         amount,
         recipient,
         slippageBps = 100,
-        separateApproval = true,
-        bridgeTxData,
-        isSponsored = false,
-        sponsorApiKey,
-        sponsorPolicyId,
       } = abilityParams;
 
       const sourceChain = String(fromChainId);
@@ -215,17 +204,14 @@ export const vincentAbility = createVincentAbility({
       const pkpPublicKey = delegation.delegatorPkpInfo.publicKey;
       const pkpAddress = delegation.delegatorPkpInfo.ethAddress;
 
-      // Resolve provider
-      const finalRpcUrl = rpcUrl || (await getRpcUrl(sourceChain));
-      const provider = new ethers.providers.JsonRpcProvider(finalRpcUrl);
-
-      // Validate basics (reuse helpers)
+      // Validate basic params (chain IDs and token addresses)
       if (!validateChainId(sourceChain) || !validateChainId(destinationChain)) {
         return fail({ error: 'Invalid chain id(s)' });
       }
       if (!validateAddress(sourceTokenRaw)) {
         return fail({ error: `Invalid source token address: ${sourceTokenRaw}` });
       }
+      // Map native token address for Bungee
       const destinationToken =
         destinationTokenRaw?.toLowerCase?.() === NATIVE_TOKEN_ADDRESS.toLowerCase()
           ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
@@ -241,163 +227,92 @@ export const vincentAbility = createVincentAbility({
         return fail({ error: 'Source and destination chains must be different for bridging' });
       }
 
-      // Prepare amount（已為最小單位）
+      // Parse and verify amount input (should be smallest units)
       const amountWei = ethers.BigNumber.from(String(amount));
 
-      // If bridgeTxData is provided, skip quoting
       let best: any = undefined;
       let quoteId: any = undefined;
-      let requestHash: any = undefined;
-      let txData: any = bridgeTxData || undefined;
-      if (!txData) {
-        const quoteParams: Record<string, any> = {
-          originChainId: sourceChain,
-          destinationChainId: destinationChain,
-          inputToken: sourceTokenForQuote,
-          outputToken: destinationToken,
-          inputAmount: amountWei.toString(),
-          userAddress: recipient ?? pkpAddress,
-          receiverAddress: recipient ?? pkpAddress,
-          uniqueRoutesPerBridge: true,
-          sort: 'output',
-          singleTxOnly: true,
-          isContractCall: false,
-          useInbox: true,
-          slippage: String(Number(slippageBps) / 100),
-        };
-        console.log(`${logPrefix} Fetching quote`, quoteParams);
-        const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
-        best = quoteData.result.autoRoute;
-        quoteId = quoteData.result.autoRoute.quoteId;
-        const requestType = quoteData.result.autoRoute.requestType;
-        requestHash = quoteData.result.autoRoute.requestHash;
-        console.log('-Quote ID:', quoteId);
-        console.log('-Request Type:', requestType);
-        txData = best?.txData;
-      }
-
-      // Optional ERC20 approval (on-chain check). If insufficient, try building approval tx via API.
-      const needsApproval = !isNativeToken(sourceTokenRaw)
-        ? (
-            await checkAndApproveToken(
-              provider,
-              sourceTokenRaw,
-              pkpAddress,
-              best?.approvalData?.allowanceTarget || best?.txTarget || pkpAddress,
-              amountWei,
-            )
-          ).needsApproval
-        : false;
-      if (needsApproval && best?.approvalData) {
-        console.log(`${logPrefix} Building approval tx from approvalData`);
-        const spenderAddress =
-          best.approvalData.spenderAddress || best?.approvalData?.allowanceTarget;
-        const approvalAmount = best.approvalData.amount || amountWei.toString();
-        const tokenAddress = best.approvalData.tokenAddress || sourceTokenRaw;
-        let approvalHash: string;
-        let usedNonce: string | undefined;
-        if (isSponsored) {
-          if (!sponsorApiKey || !sponsorPolicyId) {
+      // Prepare quote params as in precheck
+      const quoteParams: Record<string, any> = {
+        originChainId: sourceChain,
+        destinationChainId: destinationChain,
+        inputToken: sourceTokenForQuote,
+        outputToken: destinationToken,
+        inputAmount: amountWei.toString(),
+        userAddress: recipient ?? pkpAddress,
+        receiverAddress: recipient ?? pkpAddress,
+        uniqueRoutesPerBridge: true,
+        sort: 'output',
+        singleTxOnly: true,
+        isContractCall: false,
+        useInbox: true,
+        slippage: String(Number(slippageBps) / 100),
+      };
+      console.log(`${logPrefix} Fetching quote`, quoteParams);
+      const quoteData: any = await callBungeeAPI('/bungee/quote', 'GET', quoteParams);
+      best = quoteData.result.autoRoute;
+      quoteId = quoteData.result.autoRoute.quoteId;
+      const requestType = quoteData.result.autoRoute.requestType;
+      console.log('-Quote ID:', quoteId);
+      console.log('-Request Type:', requestType);
+      // If Bungee returned a Permit2 signTypedData payload, sign and submit immediately
+      if (best?.signTypedData) {
+        const signTypedData = best.signTypedData;
+        const witness = signTypedData?.values?.witness ?? undefined;
+        // EIP-712 signing: use ethers TypedDataEncoder plus Lit.Actions PKP signature
+        try {
+          const hash = ethers.utils._TypedDataEncoder.hash(
+            signTypedData.domain || {},
+            signTypedData.types || {},
+            signTypedData.values || {},
+          );
+          // Sign with Lit PKP (`signAndCombineEcdsa` returns JSON with r,s,v)
+          const sigJson = await Lit.Actions.signAndCombineEcdsa({
+            toSign: ethers.utils.arrayify(hash),
+            publicKey: pkpPublicKey,
+            sigName: 'alchemyTypedData',
+          });
+          const parsed = JSON.parse(sigJson);
+          // Join into full Ethereum signature
+          const userSignature = ethers.utils.joinSignature({
+            r: '0x' + parsed.r.substring(2),
+            s: '0x' + parsed.s,
+            v: parsed.v,
+          });
+          const request = witness;
+          // Submit signed request + quoteId to Bungee
+          const submitBody = { requestType, request, userSignature, quoteId };
+          const submitResp: any = await callBungeeAPI('/bungee/submit', 'POST', submitBody);
+          const requestHash = submitResp?.result?.requestHash;
+          if (!requestHash) {
             return fail({
               reason: KNOWN_ERRORS.EXECUTION_FAILED,
-              error: 'Missing sponsorApiKey/sponsorPolicyId',
+              error: `Submit failed: ${JSON.stringify(submitResp)}`,
             });
           }
-          const res = await sendSponsoredApprove({
-            pkpPublicKey,
-            pkpEthAddress: pkpAddress,
-            chainId: Number(sourceChain),
-            tokenAddress,
-            spenderAddress,
-            amount: approvalAmount,
-            sponsorApiKey,
-            sponsorPolicyId,
-          });
-          approvalHash = res.txHash;
-        } else {
-          const res = await sendErc20ApproveRunOnce({
-            provider,
-            pkpAddress,
-            pkpPublicKey,
-            sourceChain,
-            tokenAddress,
-            spenderAddress,
-            amount: approvalAmount,
-          });
-          approvalHash = res.txHash;
-          usedNonce = res.usedNonce;
-        }
-        console.log(`${logPrefix} Approval sent: ${approvalHash}`);
-        if (separateApproval) {
+          // Success: return result to client for status polling
           return succeed({
-            approvalTxHash: approvalHash,
-            bridgeTxData: txData,
+            requestType,
             quoteId,
             requestHash,
             fromChainId: sourceChain,
             toChainId: destinationChain,
             timestamp: Date.now(),
-            nextStep: 'send-bridge-tx',
+            nextStep: 'permit2-status',
           } as any);
-        }
-        // Stash used approval nonce for next tx
-        const approvalUsedNonce = usedNonce ? ethers.BigNumber.from(usedNonce) : undefined;
-        // Pass down via closure variable for bridge step
-        (globalThis as any).__bungeeApprovalNonce = approvalUsedNonce
-          ? approvalUsedNonce.toString()
-          : undefined;
-      }
-      console.log(`${logPrefix} Best route:`, best);
-      // Build bridge tx - use provided or autoRoute.txData per Auto Inbox flow
-      // txData already set above
-      if (!txData) {
-        return fail({
-          reason: KNOWN_ERRORS.EXECUTION_FAILED,
-          error:
-            'Missing txData from autoRoute. Please re-fetch quote immediately and retry execute.',
-        });
-      }
-      if (!txData?.to || !txData?.data) {
-        return fail({ reason: KNOWN_ERRORS.EXECUTION_FAILED, error: 'Invalid build-tx response' });
-      }
-      let txHash: string;
-      if (isSponsored) {
-        if (!sponsorApiKey || !sponsorPolicyId) {
+        } catch (e) {
+          // If signature or submission fails, return as execution failed
           return fail({
             reason: KNOWN_ERRORS.EXECUTION_FAILED,
-            error: 'Missing sponsorApiKey/sponsorPolicyId',
+            error: e instanceof Error ? e.message : String(e),
           });
         }
-        const res = await sendSponsoredBridge({
-          pkpPublicKey,
-          chainId: Number(sourceChain),
-          to: txData.to,
-          data: txData.data,
-          value: txData.value,
-          sponsorApiKey,
-          sponsorPolicyId,
-        });
-        txHash = res.txHash;
-      } else {
-        const res = await sendBridgeRunOnce({
-          provider,
-          pkpAddress,
-          pkpPublicKey,
-          sourceChain,
-          txData,
-          gasHints: { gasLimit: best?.gasFee?.gasLimit, gasPrice: best?.gasFee?.gasPrice },
-          approvalUsedNonce: (globalThis as any).__bungeeApprovalNonce,
-        });
-        txHash = res.txHash;
       }
-      console.log(`${logPrefix} Bridge tx sent: ${txHash}`);
 
-      return succeed({
-        txHash,
-        routeSummary: best,
-        fromChainId: sourceChain,
-        toChainId: destinationChain,
-        timestamp: Date.now(),
+      // Fail if no Permit2 signTypedData is available for this route
+      return fail({
+        reason: KNOWN_ERRORS.EXECUTION_FAILED,
+        error: 'Permit2 signTypedData not available for this route',
       });
     } catch (error) {
       console.error(`${logPrefix} Execution failed`, error);

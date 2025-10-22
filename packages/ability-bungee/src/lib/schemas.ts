@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+// NOTE:
+// This ability is Permit2-only. We do NOT send raw transactions nor sponsored userOps here.
+// The execute step either:
+//  - returns EIP-712 typed data (client/server signs & submits), or
+//  - signs inside the Lit Action and submits to Bungee, returning a requestHash for status polling.
+
 export const KNOWN_ERRORS = {
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   INVALID_AMOUNT: 'INVALID_AMOUNT', // Here for example purposes
@@ -10,11 +16,10 @@ export const KNOWN_ERRORS = {
   EXECUTION_FAILED: 'EXECUTION_FAILED',
 } as const;
 
-/**
- * Tool parameters schema - defines the input parameters for the native send tool
- */
+// Input params expected by the ability consumer.
+// - amounts are strings in smallest unit
+// - addresses must be valid EVM addresses
 export const abilityParamsSchema = z.object({
-  rpcUrl: z.string().url('Invalid RPC URL format'),
   fromChainId: z.union([z.string(), z.number()]),
   toChainId: z.union([z.string(), z.number()]),
   fromToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid token address'),
@@ -22,19 +27,15 @@ export const abilityParamsSchema = z.object({
   amount: z.string().regex(/^\d+$/, 'Amount must be integer string'),
   recipient: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid recipient address'),
   slippageBps: z.number().int().min(1).max(1000).optional().default(100),
-  separateApproval: z.boolean().optional().default(true),
-  bridgeTxData: z.any().optional(),
-  isSponsored: z.boolean().optional().default(false),
-  sponsorApiKey: z.string().optional(),
-  sponsorPolicyId: z.string().optional(),
 });
 
 /**
  * Precheck success result schema
  */
+// Precheck success: echo back the chosen route and a rough out-amount.
 export const precheckSuccessSchema = z.object({
-  bestRoute: z.any(), // 儲存 Bungee API 返回的最佳路由資訊
-  estimatedToAmount: z.string(), // 預估到手金額
+  bestRoute: z.any(),
+  estimatedToAmount: z.string(),
   fromChainId: z.union([z.string(), z.number()]),
   toChainId: z.union([z.string(), z.number()]),
 });
@@ -56,31 +57,37 @@ export const precheckFailSchema = z.object({
 /**
  * Execute success result schema
  */
+// Execute success has 2 shapes:
+// 1) Return typed data for client/server-side signing and submit
+// 2) Already signed & submitted inside the Lit Action, returning requestHash
 export const executeSuccessSchema = z.union([
   z.object({
-    // bridge 成功
-    txHash: z.string(),
-    routeSummary: z.any().optional(),
+    requestType: z.string(),
+    quoteId: z.string(),
+    signTypedData: z.any(),
+    witness: z.any().optional(),
+    approvalData: z.any().optional(),
     fromChainId: z.union([z.string(), z.number()]),
     toChainId: z.union([z.string(), z.number()]),
     timestamp: z.number(),
+    nextStep: z.literal('permit2-submit'),
   }),
   z.object({
-    // 兩段模式：僅完成 approve
-    approvalTxHash: z.string(),
-    bridgeTxData: z.any(),
-    quoteId: z.string().optional(),
-    requestHash: z.string().optional(),
+    // Lit Action already signed & submitted → consumer should poll status using requestHash
+    requestType: z.string(),
+    quoteId: z.string(),
+    requestHash: z.string(),
     fromChainId: z.union([z.string(), z.number()]),
     toChainId: z.union([z.string(), z.number()]),
     timestamp: z.number(),
-    nextStep: z.literal('send-bridge-tx'),
+    nextStep: z.literal('permit2-status'),
   }),
 ]);
 
 /**
  * Execute failure result schema
  */
+// Execute failure is intentionally small: a reason literal and a message.
 export const executeFailSchema = z.object({
   reason: z
     .union([z.literal(KNOWN_ERRORS.EXECUTION_FAILED), z.literal(KNOWN_ERRORS.NO_ROUTE_FOUND)])
