@@ -240,9 +240,12 @@ export const vincentAbility = createVincentAbility({
             providedSignTypedData.types || {},
             providedSignTypedData.values || {},
           );
+          const sanitizedPublicKey = pkpPublicKey.startsWith('0x')
+            ? pkpPublicKey.slice(2)
+            : pkpPublicKey;
           const sigJson = await Lit.Actions.signAndCombineEcdsa({
             toSign: ethers.utils.arrayify(hash),
-            publicKey: pkpPublicKey,
+            publicKey: sanitizedPublicKey,
             sigName: 'alchemyTypedData',
           });
           const parsed = JSON.parse(sigJson);
@@ -311,9 +314,12 @@ export const vincentAbility = createVincentAbility({
             signTypedData.values || {},
           );
           // Sign with Lit PKP (`signAndCombineEcdsa` returns JSON with r,s,v)
+          const sanitizedPublicKey = pkpPublicKey.startsWith('0x')
+            ? pkpPublicKey.slice(2)
+            : pkpPublicKey;
           const sigJson = await Lit.Actions.signAndCombineEcdsa({
             toSign: ethers.utils.arrayify(hash),
-            publicKey: pkpPublicKey,
+            publicKey: sanitizedPublicKey,
             sigName: 'alchemyTypedData',
           });
           const parsed = JSON.parse(sigJson);
