@@ -38,7 +38,10 @@
     "bootstrap": "pnpm install && pnpm build && tsx ./src/bin/bootstrap.ts"
   },
   "dependencies": {
+    "@account-kit/infra": "^4.62.0",
+    "@account-kit/smart-contracts": "^4.62.0",
     "@lit-protocol/constants": "^7.2.3",
+    "@lit-protocol/vincent-scaffold-sdk": "github:Lit-Protocol/vincent-scaffold-sdk",
     "envfile": "7.1.0",
     "inquirer": "12.9.4",
     "tslib": "2.8.1",

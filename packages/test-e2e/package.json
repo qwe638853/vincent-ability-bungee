@@ -16,7 +16,7 @@
     "@lit-protocol/vincent-app-sdk": "^2.0.0",
     "@lit-protocol/vincent-contracts-sdk": "^1.0.1",
     "@lit-protocol/vincent-example-ability-native-send": "workspace:*",
-    "@lit-protocol/ability-bungee": "workspace:*",
+    "@qwe638853/ability-bungee": "workspace:*",
     "@lit-protocol/vincent-example-policy-counter": "workspace:*",
     "@t3-oss/env-core": "0.13.8",
     "ethers": "5.8.0",

@@ -12,9 +12,18 @@ importers:
 
   .:
     dependencies:
+      '@account-kit/infra':
+        specifier: ^4.62.0
+        version: 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/smart-contracts':
+        specifier: ^4.62.0
+        version: 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@lit-protocol/constants':
         specifier: ^7.2.3
         version: 7.3.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@lit-protocol/vincent-scaffold-sdk':
+        specifier: github:Lit-Protocol/vincent-scaffold-sdk
+        version: https://codeload.github.com/Lit-Protocol/vincent-scaffold-sdk/tar.gz/64b4ab5e802c6dc8b5cd04a48e5282dd9856d9a5(@lit-protocol/vincent-ability-sdk@2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       envfile:
         specifier: 7.1.0
         version: 7.1.0
@@ -154,12 +163,9 @@ importers:
       '@lit-protocol/vincent-app-sdk':
         specifier: ^2.0.0
         version: 2.0.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
-      '@lit-protocol/vincent-example-policy-counter':
-        specifier: workspace:*
-        version: link:../policy-counter
       '@lit-protocol/vincent-scaffold-sdk':
-        specifier: ^2.0.0
-        version: 2.0.0(@lit-protocol/vincent-ability-sdk@2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+        specifier: 1.1.9-mma
+        version: 1.1.9-mma(@lit-protocol/vincent-app-sdk@2.0.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))(@lit-protocol/vincent-tool-sdk@1.0.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       ethers:
         specifier: 5.8.0
         version: 5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -250,9 +256,6 @@ importers:
       '@dotenvx/dotenvx':
         specifier: 1.44.2
         version: 1.44.2
-      '@lit-protocol/ability-bungee':
-        specifier: workspace:*
-        version: link:../ability-bungee
       '@lit-protocol/constants':
         specifier: ^7.2.3
         version: 7.3.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -271,6 +274,9 @@ importers:
       '@lit-protocol/vincent-example-policy-counter':
         specifier: workspace:*
         version: link:../policy-counter
+      '@qwe638853/ability-bungee':
+        specifier: workspace:*
+        version: link:../ability-bungee
       '@t3-oss/env-core':
         specifier: 0.13.8
         version: 0.13.8(typescript@5.8.3)(zod@3.25.76)
@@ -293,21 +299,21 @@ importers:
 
 packages:
 
-  '@aa-sdk/core@4.58.0':
-    resolution: {integrity: sha512-Rj/hX2Zu/BCHoFoywde4OzLgJDuOvcYZyuBs2rZJQoIYFWC0k3X907dlp4OeVfkebvigmC9hl6F/SvtxPgdOzQ==}
+  '@aa-sdk/core@4.74.0':
+    resolution: {integrity: sha512-V3sGxhWjge5xhnnSyJjrN57YTAD0NdyUeCe9axydEncGW81aULZ1KlXTZhRdnrTFHe2vkcjUu9t4jtRtDM7LDQ==}
     peerDependencies:
       viem: ^2.29.2
 
-  '@account-kit/infra@4.58.0':
-    resolution: {integrity: sha512-WRAXAgpEBJ8H24Ej4qI3c4YcYnWNVDGdqNuwpdvu6fI7Gi3igZuNhOSrmR4xc/wc7o9Fn29qgkD8pylFgK1s/w==}
+  '@account-kit/infra@4.74.0':
+    resolution: {integrity: sha512-AGcX53BXEBpTj0l5JGgKxEtkW309O+QSrZ/o3iQZ9GHFnDhumj/9qP7U+QsBZvBW0Cu3CJHKBL9O6VN4bYUevw==}
     peerDependencies:
       viem: ^2.29.2
 
-  '@account-kit/logging@4.58.0':
-    resolution: {integrity: sha512-4wqpCpKbmxS22n5oHU3cNvdqa9aw2XtTmoikte7eDu3rxf/b7SxWhAhl6XUaLczczCsBXVWp08i9HNTevQPYpg==}
+  '@account-kit/logging@4.74.0':
+    resolution: {integrity: sha512-tBaOaXe81pzhK+KNsFSvxOKyRnhUgRw7uivFglaM7qeAuXUeGElfxk2WTiiiEpH88M2s/z8rZG5atymvi4NNig==}
 
-  '@account-kit/smart-contracts@4.58.0':
-    resolution: {integrity: sha512-r9boG88Bo3BaWjX3Aqu0uxW3h+1rOnY2kgyg3lZkMCgUuyctZ9/0tTNBwwuOl+H3ZEHx2Zz3zd7/zuAe57QsaQ==}
+  '@account-kit/smart-contracts@4.74.0':
+    resolution: {integrity: sha512-h2KGSuxV+kA6uUkyHJ4BvofokHJLufRSrP/mhJNjJydohGf21sSvZKpYE9T1egwP5DRsc3HOzmLFgy9QMgZ4hw==}
     peerDependencies:
       viem: ^2.29.2
 
@@ -1952,12 +1958,31 @@ packages:
   '@lit-protocol/vincent-contracts-sdk@1.0.1':
     resolution: {integrity: sha512-GcFG38qE+FV/nd63PZZUz8M4DDyTRd3Xaap0MzwEQInQwwQdJr2Xe2sZQc0RUiX+xNx9D7ZnXoBEBobJO8WH7w==}
 
+  '@lit-protocol/vincent-scaffold-sdk@1.1.9-mma':
+    resolution: {integrity: sha512-RAUHDaRwPW8eNti4VCFJ2OG6Eqd6bbNqcC1iZtD7vw2cUPInRBNKVWrDFrIoNLYpY7nKvwrivZVn/RtjnSVdUQ==}
+    engines: {node: '>=16.0.0'}
+    hasBin: true
+    peerDependencies:
+      '@lit-protocol/vincent-app-sdk': '*'
+      '@lit-protocol/vincent-tool-sdk': '*'
+
   '@lit-protocol/vincent-scaffold-sdk@2.0.0':
     resolution: {integrity: sha512-ZoUETWzSGwCL+NoeYWdqAZWJ5ve2e+AHkM8uoRD6d0al1yfezx0uR0RIiarVx65RJofGhkP1VwS2pTQ36/BK7Q==}
     engines: {node: '>=16.0.0'}
     hasBin: true
     peerDependencies:
       '@lit-protocol/vincent-ability-sdk': '*'
+
+  '@lit-protocol/vincent-scaffold-sdk@https://codeload.github.com/Lit-Protocol/vincent-scaffold-sdk/tar.gz/64b4ab5e802c6dc8b5cd04a48e5282dd9856d9a5':
+    resolution: {tarball: https://codeload.github.com/Lit-Protocol/vincent-scaffold-sdk/tar.gz/64b4ab5e802c6dc8b5cd04a48e5282dd9856d9a5}
+    version: 2.0.0
+    engines: {node: '>=16.0.0'}
+    hasBin: true
+    peerDependencies:
+      '@lit-protocol/vincent-ability-sdk': '*'
+
+  '@lit-protocol/vincent-tool-sdk@1.0.2':
+    resolution: {integrity: sha512-AHU8RYI3KkLRfYTXbxJBW1buQDWJTkJyE/lb34JwQjy3nqFXu/bS29PdxUIGZvq/rcUjCmDsRgCRz1Kid7T5hA==}
 
   '@lit-protocol/wasm@7.3.0':
     resolution: {integrity: sha512-ED7O4o04b2AFPQJzO/waqAWfApEoYSTF3osqpSDJgCL4mVSXPsoTGY0oHXcT4TJFmBlaqwz1r1lrt1kS6X2Y1Q==}
@@ -2094,21 +2119,25 @@ packages:
     resolution: {integrity: sha512-Cc1MIZHZEkY60xWuCxoTRDCbdezSyDNnziH9OUnJrCTB09EvDjUv+x9wyOYyBCfcGeU1b1L1icGKw7cS/CZwVw==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@nx/nx-linux-arm64-musl@21.2.1':
     resolution: {integrity: sha512-L0c59PWMmU66tYQG4Ume8dCvUChVvxW1B0iAyb1vSEB4sLQgdCIn44uxwmb3+0qIeex2RJlFt7FyI+ey5AfUvQ==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@nx/nx-linux-x64-gnu@21.2.1':
     resolution: {integrity: sha512-E72abpUPT41DmgOmteTbcuiyRW0lY+3i9lq0drOjr1LApUJs+/HTa3W6K1qAGwZ6vn0XDOdYyG5jhFGzNl1pOg==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@nx/nx-linux-x64-musl@21.2.1':
     resolution: {integrity: sha512-aBt7BP0tMRx/iRUkuJnLQykQA/YO2phC6moPNxx+DHfricjI77gWWal/FlKQsM7g/bAoXPQw0QSG/ifvrJnUUA==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@nx/nx-win32-arm64-msvc@21.2.1':
     resolution: {integrity: sha512-NTGSDk6i9L3OEreBmlCaCAYHLRjHuyk3rCbX+MzDWCbO9HCLTO/NtKdwsKUNhBWDpEz5pN4ryU05vRBmGXhySA==}
@@ -2335,24 +2364,28 @@ packages:
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@swc/core-linux-arm64-musl@1.5.7':
     resolution: {integrity: sha512-+NDhK+IFTiVK1/o7EXdCeF2hEzCiaRSrb9zD7X2Z7inwWlxAntcSuzZW7Y6BRqGQH89KA91qYgwbnjgTQ22PiQ==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@swc/core-linux-x64-gnu@1.5.7':
     resolution: {integrity: sha512-25GXpJmeFxKB+7pbY7YQLhWWjkYlR+kHz5I3j9WRl3Lp4v4UD67OGXwPe+DIcHqcouA1fhLhsgHJWtsaNOMBNg==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@swc/core-linux-x64-musl@1.5.7':
     resolution: {integrity: sha512-0VN9Y5EAPBESmSPPsCJzplZHV26akC0sIgd3Hc/7S/1GkSMoeuVL+V9vt+F/cCuzr4VidzSkqftdP3qEIsXSpg==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@swc/core-win32-arm64-msvc@1.5.7':
     resolution: {integrity: sha512-RtoNnstBwy5VloNCvmvYNApkTmuCe4sNcoYWpmY7C1+bPR+6SOo8im1G6/FpNem8AR5fcZCmXHWQ+EUmRWJyuA==}
@@ -2689,41 +2722,49 @@ packages:
     resolution: {integrity: sha512-34gw7PjDGB9JgePJEmhEqBhWvCiiWCuXsL9hYphDF7crW7UgI05gyBAi6MF58uGcMOiOqSJ2ybEeCvHcq0BCmQ==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@unrs/resolver-binding-linux-arm64-musl@1.11.1':
     resolution: {integrity: sha512-RyMIx6Uf53hhOtJDIamSbTskA99sPHS96wxVE/bJtePJJtpdKGXO1wY90oRdXuYOGOTuqjT8ACccMc4K6QmT3w==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@unrs/resolver-binding-linux-ppc64-gnu@1.11.1':
     resolution: {integrity: sha512-D8Vae74A4/a+mZH0FbOkFJL9DSK2R6TFPC9M+jCWYia/q2einCubX10pecpDiTmkJVUH+y8K3BZClycD8nCShA==}
     cpu: [ppc64]
     os: [linux]
+    libc: [glibc]
 
   '@unrs/resolver-binding-linux-riscv64-gnu@1.11.1':
     resolution: {integrity: sha512-frxL4OrzOWVVsOc96+V3aqTIQl1O2TjgExV4EKgRY09AJ9leZpEg8Ak9phadbuX0BA4k8U5qtvMSQQGGmaJqcQ==}
     cpu: [riscv64]
     os: [linux]
+    libc: [glibc]
 
   '@unrs/resolver-binding-linux-riscv64-musl@1.11.1':
     resolution: {integrity: sha512-mJ5vuDaIZ+l/acv01sHoXfpnyrNKOk/3aDoEdLO/Xtn9HuZlDD6jKxHlkN8ZhWyLJsRBxfv9GYM2utQ1SChKew==}
     cpu: [riscv64]
     os: [linux]
+    libc: [musl]
 
   '@unrs/resolver-binding-linux-s390x-gnu@1.11.1':
     resolution: {integrity: sha512-kELo8ebBVtb9sA7rMe1Cph4QHreByhaZ2QEADd9NzIQsYNQpt9UkM9iqr2lhGr5afh885d/cB5QeTXSbZHTYPg==}
     cpu: [s390x]
     os: [linux]
+    libc: [glibc]
 
   '@unrs/resolver-binding-linux-x64-gnu@1.11.1':
     resolution: {integrity: sha512-C3ZAHugKgovV5YvAMsxhq0gtXuwESUKc5MhEtjBpLoHPLYM+iuwSj3lflFwK3DPm68660rZ7G8BMcwSro7hD5w==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@unrs/resolver-binding-linux-x64-musl@1.11.1':
     resolution: {integrity: sha512-rV0YSoyhK2nZ4vEswT/QwqzqQXw5I6CjoaYMOX0TqBlWhojUf8P94mvI7nuJTeaCkkds3QE4+zS8Ko+GdXuZtA==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@unrs/resolver-binding-wasm32-wasi@1.11.1':
     resolution: {integrity: sha512-5u4RkfxJm+Ng7IWgkzi3qrFOvLvQYnPBmjmZQ8+szTK/b31fQCnleNl1GgEt7nIsZRIf5PLhPwT0WM+q45x/UQ==}
@@ -6290,7 +6331,16 @@ packages:
 
 snapshots:
 
-  '@aa-sdk/core@4.58.0(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@aa-sdk/core@4.74.0(typescript@5.8.3)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+    dependencies:
+      abitype: 0.8.11(typescript@5.8.3)(zod@3.25.76)
+      eventemitter3: 5.0.1
+      viem: 2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - typescript
+
+  '@aa-sdk/core@4.74.0(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
       abitype: 0.8.11(typescript@5.8.3)(zod@3.25.76)
       eventemitter3: 5.0.1
@@ -6299,10 +6349,27 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@account-kit/infra@4.58.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@account-kit/infra@4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
-      '@aa-sdk/core': 4.58.0(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@account-kit/logging': 4.58.0
+      '@aa-sdk/core': 4.74.0(typescript@5.8.3)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/logging': 4.74.0
+      eventemitter3: 5.0.1
+      viem: 2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zod: 3.25.76
+    optionalDependencies:
+      alchemy-sdk: 3.6.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - supports-color
+      - typescript
+      - utf-8-validate
+
+  '@account-kit/infra@4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+    dependencies:
+      '@aa-sdk/core': 4.74.0(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/logging': 4.74.0
       eventemitter3: 5.0.1
       viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       zod: 3.25.76
@@ -6316,17 +6383,31 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@account-kit/logging@4.58.0':
+  '@account-kit/logging@4.74.0':
     dependencies:
       '@segment/analytics-next': 1.74.0
       uuid: 11.1.0
     transitivePeerDependencies:
       - encoding
 
-  '@account-kit/smart-contracts@4.58.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@account-kit/smart-contracts@4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
-      '@aa-sdk/core': 4.58.0(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@account-kit/infra': 4.58.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@aa-sdk/core': 4.74.0(typescript@5.8.3)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/infra': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      viem: 2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      webauthn-p256: 0.0.10
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - supports-color
+      - typescript
+      - utf-8-validate
+
+  '@account-kit/smart-contracts@4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+    dependencies:
+      '@aa-sdk/core': 4.74.0(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/infra': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       webauthn-p256: 0.0.10
     transitivePeerDependencies:
@@ -8783,10 +8864,41 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@lit-protocol/vincent-scaffold-sdk@1.1.9-mma(@lit-protocol/vincent-app-sdk@2.0.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))(@lit-protocol/vincent-tool-sdk@1.0.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
+      '@account-kit/infra': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/smart-contracts': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@lit-protocol/contracts-sdk': 7.3.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@lit-protocol/vincent-app-sdk': 2.0.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@lit-protocol/vincent-tool-sdk': 1.0.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@wagmi/core': 2.20.1(typescript@5.8.3)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      chalk: 4.1.2
+      dotenv: 16.4.7
+      esbuild: 0.19.12
+      esbuild-plugin-polyfill-node: 0.3.0(esbuild@0.19.12)
+      ethers: 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      inquirer: 8.2.7(@types/node@20.19.11)
+      ipfs-only-hash: 4.0.0
+      viem: 2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@tanstack/query-core'
+      - '@types/node'
+      - '@types/react'
+      - bufferutil
+      - debug
+      - encoding
+      - immer
+      - react
+      - supports-color
+      - typescript
+      - use-sync-external-store
+      - utf-8-validate
+      - zod
+
   '@lit-protocol/vincent-scaffold-sdk@2.0.0(@lit-protocol/vincent-ability-sdk@2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@account-kit/infra': 4.58.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@account-kit/smart-contracts': 4.58.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/infra': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/smart-contracts': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@lit-protocol/contracts-sdk': 7.3.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@lit-protocol/vincent-ability-sdk': 2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@lit-protocol/vincent-contracts-sdk': 1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -8813,6 +8925,46 @@ snapshots:
       - use-sync-external-store
       - utf-8-validate
       - zod
+
+  '@lit-protocol/vincent-scaffold-sdk@https://codeload.github.com/Lit-Protocol/vincent-scaffold-sdk/tar.gz/64b4ab5e802c6dc8b5cd04a48e5282dd9856d9a5(@lit-protocol/vincent-ability-sdk@2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
+      '@account-kit/infra': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@account-kit/smart-contracts': 4.74.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@lit-protocol/contracts-sdk': 7.3.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@lit-protocol/vincent-ability-sdk': 2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@lit-protocol/vincent-contracts-sdk': 1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@wagmi/core': 2.20.1(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      chalk: 4.1.2
+      dotenv: 16.4.7
+      esbuild: 0.19.12
+      esbuild-plugin-polyfill-node: 0.3.0(esbuild@0.19.12)
+      ethers: 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      inquirer: 8.2.7(@types/node@20.19.11)
+      ipfs-only-hash: 4.0.0
+      viem: 2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@tanstack/query-core'
+      - '@types/node'
+      - '@types/react'
+      - bufferutil
+      - debug
+      - encoding
+      - immer
+      - react
+      - supports-color
+      - typescript
+      - use-sync-external-store
+      - utf-8-validate
+      - zod
+
+  '@lit-protocol/vincent-tool-sdk@1.0.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
+      ethers: 5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      tslib: 2.8.1
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@lit-protocol/wasm@7.3.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
@@ -9810,6 +9962,20 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
+
+  '@wagmi/core@2.20.1(typescript@5.8.3)(viem@2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+    dependencies:
+      eventemitter3: 5.0.1
+      mipd: 0.0.7(typescript@5.8.3)
+      viem: 2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zustand: 5.0.0
+    optionalDependencies:
+      typescript: 5.8.3
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+      - react
+      - use-sync-external-store
 
   '@wagmi/core@2.20.1(typescript@5.8.3)(viem@2.33.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
