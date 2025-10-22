@@ -253,11 +253,13 @@ export const vincentAbility = createVincentAbility({
       const requestType = quoteData.result.autoRoute.requestType;
       console.log('-Quote ID:', quoteId);
       console.log('-Request Type:', requestType);
-      console.log('-Best:', best);
+
       // If Bungee returned a Permit2 signTypedData payload, sign it inside the Lit Action
       if (best?.signTypedData) {
         const signTypedData = best.signTypedData;
+        console.log('-Sign Typed Data:', signTypedData);
         const witness = signTypedData?.values?.witness ?? undefined;
+        console.log('-Witness:', witness);
         // EIP-712 signing: use ethers TypedDataEncoder plus Lit.Actions PKP signature
         try {
           const hash = ethers.utils._TypedDataEncoder.hash(
@@ -265,13 +267,16 @@ export const vincentAbility = createVincentAbility({
             signTypedData.types || {},
             signTypedData.values || {},
           );
+          console.log('-Hash:', hash);
           // Sign with Lit PKP (`signAndCombineEcdsa` returns JSON with r,s,v)
           const sigJson = await Lit.Actions.signAndCombineEcdsa({
             toSign: ethers.utils.arrayify(hash),
             publicKey: pkpPublicKey,
             sigName: 'alchemyTypedData',
           });
+          console.log('-Sig JSON:', sigJson);
           const parsed = JSON.parse(sigJson);
+          console.log('-Parsed:', parsed);
           // Join into full Ethereum signature
           const userSignature = ethers.utils.joinSignature({
             r: '0x' + parsed.r.substring(2),
