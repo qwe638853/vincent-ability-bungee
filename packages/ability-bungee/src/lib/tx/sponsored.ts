@@ -1,4 +1,4 @@
-import { sponsoredGasContractCall, waitForUserOp  } from '@lit-protocol/vincent-scaffold-sdk';
+import { sponsoredGasContractCall, waitForUserOp } from '@lit-protocol/vincent-scaffold-sdk';
 
 import { ERC20_ABI } from '../helpers';
 
@@ -42,6 +42,7 @@ export async function sendSponsoredApprove(params: {
   return { useropHash, txHash };
 }
 
+// send sponsored bridge tx
 export async function sendSponsoredBridge(params: {
   pkpPublicKey: string;
   chainId: number;
