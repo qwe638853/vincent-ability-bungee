@@ -194,6 +194,9 @@ export const vincentAbility = createVincentAbility({
         amount,
         recipient,
         slippageBps = 100,
+        signTypedData: providedSignTypedData,
+        quoteId: providedQuoteId,
+        requestType: providedRequestType,
       } = abilityParams;
 
       const sourceChain = String(fromChainId);
@@ -229,6 +232,48 @@ export const vincentAbility = createVincentAbility({
       // Parse and verify amount input (should be smallest units)
       const amountWei = ethers.BigNumber.from(String(amount));
 
+      // Fast path: if signTypedData provided by caller, only sign & return
+      if (providedSignTypedData) {
+        try {
+          const hash = ethers.utils._TypedDataEncoder.hash(
+            providedSignTypedData.domain || {},
+            providedSignTypedData.types || {},
+            providedSignTypedData.values || {},
+          );
+          const sigJson = await Lit.Actions.signAndCombineEcdsa({
+            toSign: ethers.utils.arrayify(hash),
+            publicKey: pkpPublicKey,
+            sigName: 'alchemyTypedData',
+          });
+          const parsed = JSON.parse(sigJson);
+          const userSignature = ethers.utils.joinSignature({
+            r: '0x' + parsed.r.substring(2),
+            s: '0x' + parsed.s,
+            v: parsed.v,
+          });
+          console.log(`${logPrefix} Signed typed data (fast path)`, {
+            quoteId: providedQuoteId,
+            requestType: providedRequestType,
+            sigPreview: `${userSignature.slice(0, 12)}...${userSignature.slice(-8)}`,
+          });
+          return succeed({
+            requestType: providedRequestType ?? 'SINGLE_OUTPUT_REQUEST',
+            quoteId: providedQuoteId ?? '',
+            userSignature,
+            signTypedData: providedSignTypedData,
+            fromChainId: sourceChain,
+            toChainId: destinationChain,
+            timestamp: Date.now(),
+            nextStep: 'permit2-submit',
+          } as any);
+        } catch (e) {
+          return fail({
+            reason: KNOWN_ERRORS.EXECUTION_FAILED,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+
       let best: any = undefined;
       let quoteId: any = undefined;
       // Prepare quote params as in precheck
@@ -253,13 +298,11 @@ export const vincentAbility = createVincentAbility({
       const requestType = quoteData.result.autoRoute.requestType;
       console.log('-Quote ID:', quoteId);
       console.log('-Request Type:', requestType);
-
+      console.log('-Best:', best);
       // If Bungee returned a Permit2 signTypedData payload, sign it inside the Lit Action
       if (best?.signTypedData) {
         const signTypedData = best.signTypedData;
-        console.log('-Sign Typed Data:', signTypedData);
         const witness = signTypedData?.values?.witness ?? undefined;
-        console.log('-Witness:', witness);
         // EIP-712 signing: use ethers TypedDataEncoder plus Lit.Actions PKP signature
         try {
           const hash = ethers.utils._TypedDataEncoder.hash(
@@ -267,16 +310,13 @@ export const vincentAbility = createVincentAbility({
             signTypedData.types || {},
             signTypedData.values || {},
           );
-          console.log('-Hash:', hash);
           // Sign with Lit PKP (`signAndCombineEcdsa` returns JSON with r,s,v)
           const sigJson = await Lit.Actions.signAndCombineEcdsa({
             toSign: ethers.utils.arrayify(hash),
             publicKey: pkpPublicKey,
             sigName: 'alchemyTypedData',
           });
-          console.log('-Sig JSON:', sigJson);
           const parsed = JSON.parse(sigJson);
-          console.log('-Parsed:', parsed);
           // Join into full Ethereum signature
           const userSignature = ethers.utils.joinSignature({
             r: '0x' + parsed.r.substring(2),

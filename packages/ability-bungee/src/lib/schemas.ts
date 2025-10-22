@@ -27,6 +27,10 @@ export const abilityParamsSchema = z.object({
   amount: z.string().regex(/^\d+$/, 'Amount must be integer string'),
   recipient: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid recipient address'),
   slippageBps: z.number().int().min(1).max(1000).optional().default(100),
+  // Optional fast path: if provided, execute will only sign and return userSignature
+  signTypedData: z.any().optional(),
+  quoteId: z.string().optional(),
+  requestType: z.string().optional(),
 });
 
 /**
