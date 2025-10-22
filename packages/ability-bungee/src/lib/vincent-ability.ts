@@ -284,10 +284,11 @@ export const vincentAbility = createVincentAbility({
             requestType,
             sigPreview: `${userSignature.slice(0, 12)}...${userSignature.slice(-8)}`,
           });
-          // Return typed data for client/server submission, keeping signature internal to logs
+          // Return typed data + signature for client/server submission
           return succeed({
             requestType,
             quoteId,
+            userSignature,
             signTypedData,
             witness,
             fromChainId: sourceChain,

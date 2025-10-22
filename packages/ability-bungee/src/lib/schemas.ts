@@ -64,6 +64,7 @@ export const executeSuccessSchema = z.union([
   z.object({
     requestType: z.string(),
     quoteId: z.string(),
+    userSignature: z.string(),
     signTypedData: z.any(),
     witness: z.any().optional(),
     approvalData: z.any().optional(),
