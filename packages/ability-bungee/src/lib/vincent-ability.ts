@@ -121,10 +121,6 @@ export const vincentAbility = createVincentAbility({
         inputAmount: amountWei.toString(),
         userAddress: pkpAddress,
         receiverAddress: recipient,
-        uniqueRoutesPerBridge: true,
-        sort: 'output',
-        singleTxOnly: true,
-        isContractCall: false,
         slippage: String(Number(slippageBps) / 100),
       } as const;
 
@@ -288,10 +284,6 @@ export const vincentAbility = createVincentAbility({
         inputAmount: amountWei.toString(),
         userAddress: recipient ?? pkpAddress,
         receiverAddress: recipient ?? pkpAddress,
-        uniqueRoutesPerBridge: true,
-        sort: 'output',
-        singleTxOnly: true,
-        isContractCall: false,
         slippage: String(Number(slippageBps) / 100),
       };
       console.log(`${logPrefix} Fetching quote`, quoteParams);
