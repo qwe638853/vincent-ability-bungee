@@ -228,9 +228,6 @@ importers:
       '@lit-protocol/vincent-app-sdk':
         specifier: ^2.0.0
         version: 2.0.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
-      '@lit-protocol/vincent-example-policy-counter':
-        specifier: workspace:*
-        version: link:../policy-counter
       '@lit-protocol/vincent-scaffold-sdk':
         specifier: ^2.0.0
         version: 2.0.0(@lit-protocol/vincent-ability-sdk@2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
