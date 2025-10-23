@@ -1,5 +1,5 @@
 {
-  "name": "@lit-protocol/ability-sponsor-transaction",
+  "name": "@qwe638853/ability-sponsor-transaction",
   "version": "0.0.2",
   "description": "A Vincent ability that sponsor transaction to a user.",
   "main": "./dist/src/index.js",
