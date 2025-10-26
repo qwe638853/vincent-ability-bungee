@@ -1,12 +1,11 @@
-# Vincent Sponsorship Demo
+# vincent-sponsor-transaction 
 
-> ⚠️ **Warning: This project is intended for Hackathon DEMO purposes with simplified security mechanisms. Production environments should implement more rigorous security practices.**
+> ⚠️ **Warning: This package is intended for Hackathon DEMO purposes with simplified security mechanisms. Production environments should implement more rigorous security practices.**
 
-This project is a **fork** of [LIT-Protocol/vincent-ability-starter-kit](https://github.com/LIT-Protocol/vincent-ability-starter-kit), primarily designed to demonstrate **Sponsored Gas Transactions** functionality.
+This package is a **fork** of [LIT-Protocol/vincent-ability-starter-kit](https://github.com/LIT-Protocol/vincent-ability-starter-kit), primarily designed to demonstrate **Sponsored Gas Transactions** functionality.
 
 ## 🎯 Core Features
 
-### ability-sponsor-transaction
 
 **Primary Capability: Enable zero-gas smart contract execution for users**
 
