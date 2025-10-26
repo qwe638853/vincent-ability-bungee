@@ -1,6 +1,69 @@
-# Vincent Starter Kit
+# Vincent Sponsorship Demo
 
-A complete example repository for Vincent Ability and Policy authors. This monorepo uses Nx and pnpm and includes:
+> ⚠️ **Warning: This project is intended for Hackathon DEMO purposes with simplified security mechanisms. Production environments should implement more rigorous security practices.**
+
+This project is a **fork** of [LIT-Protocol/vincent-ability-starter-kit](https://github.com/LIT-Protocol/vincent-ability-starter-kit), primarily designed to demonstrate **Sponsored Gas Transactions** functionality.
+
+## 🎯 Core Features
+
+### ability-sponsor-transaction
+
+**Primary Capability: Enable zero-gas smart contract execution for users**
+
+This Ability implements a **EIP-7702**-based sponsored transaction mechanism, allowing users to execute smart contract calls completely free of charge. All gas fees are covered by the application sponsor.
+
+#### How It Works
+
+1. **Delegation Pattern**
+
+   - Uses Vincent Ability framework and Lit Protocol PKP (Programmable Key Pair)
+   - User's PKP is authorized to sign transactions on behalf of the user
+   - All transactions are signed through Lit Network nodes, ensuring decentralized security
+
+2. **Gas Sponsorship Mechanism**
+
+   - Integrates with Alchemy's EIP-7702 Gas Sponsorship API
+   - Uses Alchemy's Smart Account for User Operations
+   - Sponsors pre-configure policies to control which transactions can be sponsored
+
+3. **Execution Flow**
+   ```
+   User Request → Vincent Ability (Lit Action) → Lit PKP Signing → Alchemy Gas Sponsorship → Transaction On-Chain
+   ```
+
+#### Security Considerations (Simplified for This DEMO)
+
+**⚠️ This project uses simplified implementations for rapid prototyping:**
+
+1. **Empty Policy Array**
+
+   ```typescript
+   supportedPolicies: supportedPoliciesForAbility([]);
+   ```
+
+   - Production: Implement comprehensive Policy validation
+   - Examples: Amount limits, frequency limits, whitelist validation, etc.
+
+2. **Direct sponsorApiKey Usage**
+
+   - Production: Should validate API keys server-side
+   - API keys should NOT be exposed in client-side or public environments
+
+3. **Lack of Rate Limiting**
+   - Production: Should implement transaction frequency limits
+   - Prevents abuse and DoS attacks
+
+#### Production Environment Recommendations
+
+1. **Implement comprehensive Policy validation**
+2. **Manage API Keys server-side**
+3. **Add transaction amount and frequency limits**
+4. **Implement audit logging and monitoring**
+5. **Add transaction whitelisting functionality**
+
+### Original Starter Kit Packages
+
+This project retains the following packages from the original starter kit:
 
 - An example Vincent Ability that sends native tokens
 - An example Vincent Policy that counts ability executions
